@@ -22,7 +22,7 @@
     automation from Azure DevOps CI/CD pipelines.
     
     It copies the container configuration script to a publicly available storage container of the requested
-    Storage Acccount, it creates a new Resource Group (if one doesn't exist with the provided name), removes
+    Storage Account, it creates a new Resource Group (if one doesn't exist with the provided name), removes
     any pre-existing ACI containers with the same name, within the same Resource Group, then creates new ACI
     container instance(s) based on the provided names and invokes the container configuration script inside the
     container(s).
@@ -33,7 +33,7 @@
     - You need to have **admin rights** :
     - to create a storage container within the already existing Storage Account *- OR -*  you need to have 
       a storage container which has its public access type configured to the type of "Blob",
-    - to create a new Resource Group *- OR -*  an existing Resource Group for the Azure Container Intances,
+    - to create a new Resource Group *- OR -*  an existing Resource Group for the Azure Container Instances,
     - to create resources in the selected Resource Group.
     - Azure DevOps account with the requested Agent Pool has to exist.
     - Permission in the Azure DevOps account to add Agents to the chosen Agent Pool.
@@ -55,7 +55,7 @@
 .PARAMETER StorageAccountName
     Name of the Storage Account to upload the script file to, which is then invoke by this wrapper.
 .PARAMETER StorageContainerName
-    Name of the storage container to upload the scriptfile to be invoked by this wrapper.
+    Name of the storage container to upload the script file to be invoked by this wrapper.
 .PARAMETER ScriptFileName
     Name of the script file to invoke by this wrapper.
 .PARAMETER VSTSAccountName
