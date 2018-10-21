@@ -573,12 +573,6 @@ param (
         $FreeSpace = $LogicalDisk.FreeSpace / 1GB
         $Size = $LogicalDisk.Size / 1GB
         Write-Output "$($FreeSpace.ToString("#.##")) of $($Size.ToString("#.##")) GB disk space available"
-
-        # # Get available RAM
-        # $FreeMemory = (Get-Counter -Counter "\Memory\Available Bytes").CounterSamples[0].CookedValue/1GB
-        # $TotalMemory = (Get-wmiobject Win32_ComputerSystem).TotalPhysicalMemory/1GB
-        # #Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum | ForEach-Object {"{0:N2}" -f ([math]::round(($_.Sum / 1GB),2))}
-        # Write-Output "$($FreeMemory.ToString("#.##")) GB of $TotalMemory GB RAM available"
     }
 
     function Watch-VstsAgentService {
