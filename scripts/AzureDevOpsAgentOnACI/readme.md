@@ -45,6 +45,7 @@ This removal script removes the selected Azure Container Instance(s). It leaves 
 ## 3. Prerequisites
 
 - Azure Subscription, with an existing Storage Account
+- Access to Azure Cloud Shell (as the solution has been developed for and tested in Cloud Shell)
 - You need to have admin rights:
   - To create a storage container within the already existing Storage Account *- OR -*  a storage container with the public access type of "Blob" has to exist,
   - To create a new Resource Group *- OR -*  an existing Resource Group for the Azure Container Intances,
@@ -55,7 +56,6 @@ This removal script removes the selected Azure Container Instance(s). It leaves 
   - A PAT token can only be read once, at the time of creation.
   - PAT tokens cannot be used for privilege escalation.
   - To learn more about PAT tokens, visit the [Use Personal Access Tokens to Authenticate](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=vsts) site.
-- AzureRM PowerShell modules, AZ CLI
 
 ## 4. How to manage the solution's lifecycle
 
