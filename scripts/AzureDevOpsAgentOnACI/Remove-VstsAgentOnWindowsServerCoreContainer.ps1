@@ -24,7 +24,7 @@
 .PARAMETER ContainerName
     Name of the ACI container(s).
 .EXAMPLE
-    .\Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "ctso-cloud-mgmt-01-rg-vstsaci-01" -ContainerName "ctso-cloud-mgmt-01-euw-aci-vsts-01", "ctso-cloud-mgmt-01-euw-aci-vsts-02"
+    .\Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>"
     This removes the 2 containers requested. It leaves the Resource Group (and other resources within) intact.
 .INPUTS
     <none>
