@@ -57,13 +57,28 @@ Containers are becoming the preferred way to package, deploy, and manage cloud a
 
 ### 1.4. Problem statement
 
-One of our customers needed a solution to run customized, locked-down, self-hosted Azure DevOps agents to enable CI/CD pipeline automation. This customer prefers using PaaS services over IaaS VMs, and has strict security requirements, thus using the well-documented approach for deploying agents on VMs could not come into question.
+One of our customers decided to use Azure DevOps as their primary automation tool for Azure workloads. To achieve this, the following components are needed:
+- Private Git repositories hosted on Azure DevOps to store the configuration scripts (e.g. Terraform and ARM templates, and PowerShell scripts).
+- Build/Release pipelines to define which activities (e.g. applying Terraform templates or running PowerShell scripts) should be run in which order, with what parameters, in which Azure subscription, etc.
+- A place to run these pipelines from. There are 2 options for this: using the Microsoft-hosted agents or implementing a set of self-hosted ones. Reminder: agents provide runtimes for pipelines on VMs (for more details see the description [above](#12-using-azure-devops-for-managing-azure-infrastructure)).
+
+As this customer wanted to have full control over the agent machines, had concerns about using a shared, multi-tenant platform for this purpose, and was afraid of hitting any of the [technical limitations](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=vsts&tabs=yaml#capabilities-and-limitations) of the platform-provided agents, the default choice of using Microsoft-hosted agents fell quickly into the no go category. 
+
+To fulfill these requirements, namely to enable the customer to run Build/Release pipelines in a scalable, customized and highly secured environment, we clearly needed to implement a set of self-hosted agents.
+
+Requirements summary:
+
+- Scalability: a solution which can both scale-up (i.e. the number of CPU cores and the amount of RAM can be increased) and scale out (multiple instances can be added to support parallel deployments) was desired.
+- Customization: this includes adding extra components, such as PowerShell modules or the Terraform executable, and not having unnecessary and unused components installed.
+- Security: interactive logons have to be prohibited, incoming requests on all ports of these machines must be denied.
+
+As the customer prefers using PaaS services over IaaS VMs, and has strict security requirements, using the well-documented approach for deploying agents on VMs - what you would normally do - could not come into question.
 
 Luckily, Azure offers this relatively new service, called Azure Container Instances (ACI), using which customers can run containers without managing the underlying infrastructure. As this service is now generally available (GA), it was a perfect choice for this customer.
 
-This solution is simple, secure and has multiple benefits over a VM:
+This solution is simple, yet secure and has multiple benefits over using IaaS VM:
 
-- It does not use public IPs. It doesn't need one, as the Azure DevOps agent initiates the communication to the service.
+- It does not use public IP's. It doesn't need one, as the Azure DevOps agent initiates the communication to the service.
 - It does not have any exposed ports. There's no need for publishing anything.
 - Logging in to these containers is not possible (console and network access is not available) - only the configuration script's outputs can be read, as these are printed to the console.
 - There's no need to maintain a VNET or any other infrastructure pieces, as these ACI instances can exist on their own.
