@@ -10,6 +10,10 @@
         - [1.3. Azure Container Instances](#13-azure-container-instances)
         - [1.4. Problem statement](#14-problem-statement)
     - [2. How does the solution work?](#2-how-does-the-solution-work)
+        - [2.1. Initialize-VstsAgentOnWindowsServerCoreContainer.ps1](#21-initialize-vstsagentonwindowsservercorecontainerps1)
+        - [2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1](#22-install-vstsagentonwindowsservercorecontainerps1)
+        - [2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1](#23-remove-vstsagentonwindowsservercorecontainerps1)
+        - [2.4. Diagram](#24-diagram)
     - [3. Prerequisites](#3-prerequisites)
     - [4. How to manage the solution's lifecycle](#4-how-to-manage-the-solutions-lifecycle)
         - [4.1. Initialize ACI containers in Azure Cloud Shell](#41-initialize-aci-containers-in-azure-cloud-shell)
@@ -70,16 +74,26 @@ This solution is simple, secure and has multiple benefits over a VM:
 ## 2. How does the solution work?
 
 The solution consists of 3 scripts - all have to be placed to the same folder:
-- [Initialize-VstsAgentOnWindowsServerCoreContainer.ps1](Initialize-VstsAgentOnWindowsServerCoreContainer.md) - the external, "wrapper" script.
-- [Install-VstsAgentOnWindowsServerCoreContainer.ps1](Install-VstsAgentOnWindowsServerCoreContainer.md) - the container configuration script (internal script, runs inside of the containers) - this should never be invoked directly.
-- [Remove-VstsAgentOnWindowsServerCoreContainer.ps1](Remove-VstsAgentOnWindowsServerCoreContainer.md) - removal script that can be used to delete containers that are no longer required.
+1. [Initialize-VstsAgentOnWindowsServerCoreContainer.ps1](Initialize-VstsAgentOnWindowsServerCoreContainer.md) - the external, "wrapper" script.
+2. [Install-VstsAgentOnWindowsServerCoreContainer.ps1](Install-VstsAgentOnWindowsServerCoreContainer.md) - the container configuration script (internal script, runs inside of the containers) - this should never be invoked directly.
+3. [Remove-VstsAgentOnWindowsServerCoreContainer.ps1](Remove-VstsAgentOnWindowsServerCoreContainer.md) - removal script that can be used to delete containers that are no longer required.
+
+### 2.1. Initialize-VstsAgentOnWindowsServerCoreContainer.ps1
 
 The wrapper script can be invoked from any location (including Azure Cloud Shell), that has the required components installed (see the [prerequisites](#Prerequisites)  below). The wrapper script copies the internal, container configuration script to a publicly available storage container of the requested Storage Account, it creates a new Resource Group (if one doesn't exist with the provided name), removes any pre-existing ACI containers with the same name, within the same Resource Group, then creates new ACI container instance(s) based on the provided names and invokes the container configuration script inside the container(s). The container(s) are based on the latest version of the official Windows Server Core image (microsoft/windowsservercore LTSC) available on Docker Hub.
+
+### 2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1
 
 The internal, container configuration script downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures the instance(s) with the latest version of Terraform and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
 After the successful configuration, it prints the available disk space and keeps periodically checking that the "vstsagent" service is in running state. Failure of this service will cause the Container instance to be re-initialized. If this happens and the PAT token is still valid, the container will auto-heal itself. If the PAT token has already been revoked, or has been expired by this time, the container re-creation will fail.
 
+### 2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1
+
 This removal script removes the selected Azure Container Instance(s). It leaves the Resource Group (and other resources within it) intact.
+
+### 2.4. Diagram
+
+![alt text](_images/AzureDevOpsAgentOnACI.jpg "Azure DevOps agent on ACI containers")
 
 ## 3. Prerequisites
 
