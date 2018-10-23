@@ -1,5 +1,7 @@
 # Azure DevOps (formerly VSTS) Agents on Windows Server Core containers, using Azure Container Instances (ACI)
 
+> Category: Level 400
+
 ## 0. Table of content
 
 - [Azure DevOps (formerly VSTS) Agents on Windows Server Core containers, using Azure Container Instances (ACI)](#azure-devops-formerly-vsts-agents-on-windows-server-core-containers-using-azure-container-instances-aci)
@@ -176,3 +178,7 @@ Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscriptio
 ```
 
 - Once the containers have been removed, the agents on the Azure DevOps portal become orphaned. These have to be manually deprovisioned (deleted) on the portal.
+
+---
+
+Disclaimer: *These scripts are not supported under any Microsoft standard support program or service. The content of this repository is provided AS IS without warranty of any kind. Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a particular purpose. The entire risk arising out of the use or performance of these scripts and documentation remains with you. In no event shall Microsoft, its authors, or anyone else involved in the creation, production, or delivery of these scripts be liable for any damages whatsoever (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary loss) arising out of the use of or inability to use these scripts or documentation, even if Microsoft has been advised of the possibility of such damages.*
