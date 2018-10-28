@@ -2,7 +2,7 @@
 
 > Category: Level 400
 
-This article provides a solution for running Azure DevOps agents (Build/Release agents) on Windows Server Core based containers, hosted on Azure Container Instances (ACI). A solution like this might be useful, when the default Microsoft-hosted agents don't fit your requirements, and you don't prefer using "traditional" IaaS VM's for running your self-hosted agents.
+This article provides a solution for running Azure DevOps agents (Build/Release agents) on Windows Server Core based containers, hosted on Azure Container Instances (ACI). A solution like this might be useful, when the default Microsoft-hosted agents don't fit your requirements, and you don't prefer using "traditional" IaaS VMs for running your self-hosted agents.
 
 ## 0. Table of content
 
