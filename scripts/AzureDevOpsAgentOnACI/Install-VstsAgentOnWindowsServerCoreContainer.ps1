@@ -117,14 +117,33 @@ param (
 
     function Install-Terraform {
 
+        param (
+
+            [Parameter(Mandatory=$false,
+                       HelpMessage="Use this parameter to decide if the absolute latest or the latest stable Terraform release should be installed.")]
+            [ValidateNotNullOrEmpty()]
+            [bool]$SkipNonStableReleases = $true
+    
+            )
+        
         # Get the list of available Terraform versions
         $Response = Invoke-WebRequest -Uri "https://releases.hashicorp.com/terraform" -UseBasicParsing
 
         # Find the latest version
-        $LatestTerraformVersion = $Response.Links[1].href.Split("/")[2]
+        if ($SkipNonStableReleases -eq $true)
+        {
+            $Links = $Response.Links | Where-Object {$_.href.Split("/")[2] -match "^(\d|\d\d)\.(\d|\d\d)\.(\d|\d\d)$"}
+            $LatestTerraformVersion = $Links[0].href.Split("/")[2]
+        }
+        else
+        {
+            $LatestTerraformVersion = $Response.Links[1].href.Split("/")[2]
+        }
+
+        $Version = $LatestTerraformVersion
 
         # Find the download URL for the latest version
-        $Response = Invoke-WebRequest -Uri "https://releases.hashicorp.com/terraform/$LatestTerraformVersion" -UseBasicParsing
+        $Response = Invoke-WebRequest -Uri "https://releases.hashicorp.com/terraform/$Version" -UseBasicParsing
         $RelativePath = ($Response.Links | Where-Object {$_.href -like "*windows_amd64*"}).href
 
         # URL will be similar to this: "https://releases.hashicorp.com/terraform/0.11.8/terraform_0.11.8_windows_amd64.zip"
@@ -137,7 +156,7 @@ param (
         New-Item -ItemType Directory -Path $FolderPath -ErrorAction SilentlyContinue | Out-Null
 
         # Download and extract Terraform, remove the temporary zip file
-        Write-Output "Downloading Terraform..."
+        Write-Output "Downloading Terraform ($Version) to $FolderPath..."
         Invoke-WebRequest -Uri $URL -OutFile $FilePath -UseBasicParsing
         Expand-Archive -LiteralPath $FilePath -DestinationPath $FolderPath
         Remove-Item -Path $FilePath
