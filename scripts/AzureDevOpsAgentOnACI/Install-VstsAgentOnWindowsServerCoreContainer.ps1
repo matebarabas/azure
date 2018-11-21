@@ -90,8 +90,12 @@ param (
 
         if (-not (Get-PackageProvider -Name "Nuget" -ListAvailable -ErrorAction SilentlyContinue))
         {
-            Write-Output "Installing Nuget provider..."
+            $NewPackageProvider = Find-PackageProvider -Name "Nuget"
+            $NewPackageProviderVersion = $NewPackageProvider.Version.ToString()
+            Write-Output "Installing Nuget package provider ($NewPackageProviderVersion)..."
+
             Install-PackageProvider -Name Nuget -Force -Confirm:$false | Out-Null
+
             Write-Output "Waiting 10 seconds..."
             Start-Sleep -Seconds 10
         }
@@ -100,8 +104,11 @@ param (
         {
             if (-not (Get-Module $Module -ErrorAction SilentlyContinue))
             {
-                Write-Output "Installing $Module module..."
-                
+                $NewModule = Find-Module $Module
+                $NewModuleVersion = $NewModule.Version.ToString()
+
+                Write-Output "Installing $Module ($NewModuleVersion) module..."
+                               
                 Install-Module -Name $Module -Force -Confirm:$false -SkipPublisherCheck
             }
         }
