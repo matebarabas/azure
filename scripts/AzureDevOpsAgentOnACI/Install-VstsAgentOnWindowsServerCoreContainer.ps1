@@ -176,6 +176,39 @@ param (
 
     }
 
+    function Install-Json2Hcl {
+        # Get the list of available Terraform versions
+        $Response = Invoke-WebRequest -Uri "https://github.com/kvz/json2hcl/releases" -UseBasicParsing
+
+        # Find the latest version
+        $RelativePathToLatestVersion = (($Response.Links | Where-Object {$_.href -like "*windows_amd64*"}).href)[0]
+        $Version = $RelativePathToLatestVersion.Split("/")[-2]
+
+        # URL will be similar to this: "https://github.com/kvz/json2hcl/releases/download/v0.0.6/json2hcl_v0.0.6_windows_amd64.exe"
+        $URL = "https://github.com/$RelativePathToLatestVersion"
+
+        # Create folder
+        $FileName = Split-Path $url -Leaf
+        $FolderPath = "C:\json2hcl"
+        $FilePath = "$FolderPath\$FileName"
+        New-Item -ItemType Directory -Path $FolderPath -ErrorAction SilentlyContinue | Out-Null
+
+        # Download and extract Json2HCL
+        Write-Output "Downloading Json2HCL ($Version) to $FolderPath..."
+        Invoke-WebRequest -Uri $URL -OutFile $FilePath -UseBasicParsing
+
+        # Setting PATH environmental variable for Terraform
+        Write-Output "Setting PATH environmental variable for Json2HCL..."
+        # Get the PATH environmental Variable
+        $Path = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).Path
+        # Create New PATH environmental Variable
+        $NewPath = $Path + ";" + $FolderPath
+        # Set the New PATH environmental Variable
+        Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $NewPath
+        $env:Path += $NewPath
+
+    }
+
     function Install-VstsAgent {
         # Downloads the Visual Studio Online Build Agent, installs on the new machine, registers with the Visual
         # Studio Online account, and adds to the specified build agent pool
@@ -550,7 +583,7 @@ param (
 
         try
         {
-            Write-Host 'Validating parameters'
+            Write-Host 'Validating agent parameters'
             Test-Parameters -VstsAccount $vstsAccount -WorkDirectory $workDirectory
 
             Write-Host 'Preparing agent installation location'
@@ -602,7 +635,7 @@ param (
     }
 
     function Watch-VstsAgentService {
-        Write-Output "This container will keep running as long as the vstsagent service in it is not interrupted for longer than 3 minutes."
+        Write-Output "This container will keep running as long as the Azure DevOps agent (vstsagent) service in it is not interrupted for longer than 3 minutes."
         $TryCount = 0
         while ($true)
         {
@@ -634,6 +667,9 @@ param (
 
     # Install Terraform
     Install-Terraform
+
+    # Install Json2HCL
+    Install-Json2Hcl
 
     # Install Powershell Modules
     Install-PowerShellModules -RequiredModules $RequiredPowerShellModules
