@@ -668,35 +668,35 @@ param (
     # Install Terraform
     Install-Terraform
     $TerraformInstallEnd = Get-Date
-    $Duration = New-TimeSpan -Start $StartDate -End $TerraformInstallEnd
-    Write-Host "Terraform installation took $($Duration.Hours.ToString("00")):$($Duration.Minutes.ToString("00")):$($Duration.Seconds.ToString("00")) (HH:mm:ss)"
+    $TerraformInstallDuration = New-TimeSpan -Start $StartDate -End $TerraformInstallEnd
+    Write-Host "Terraform installation took $($TerraformInstallDuration.Hours.ToString("00")):$($TerraformInstallDuration.Minutes.ToString("00")):$($TerraformInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Json2HCL
     Install-Json2Hcl
     $Json2HclInstallEnd = Get-Date
-    $Duration = New-TimeSpan -Start $TerraformInstallEnd -End $Json2HclInstallEnd
-    Write-Host "Json2HCL installation took $($Duration.Hours.ToString("00")):$($Duration.Minutes.ToString("00")):$($Duration.Seconds.ToString("00")) (HH:mm:ss)"
+    $Json2HclInstallDuration = New-TimeSpan -Start $TerraformInstallEnd -End $Json2HclInstallEnd
+    Write-Host "Json2HCL installation took $($Json2HclInstallDuration.Hours.ToString("00")):$($Json2HclInstallDuration.Minutes.ToString("00")):$($Json2HclInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Powershell Modules
     Install-PowerShellModules -RequiredModules $RequiredPowerShellModules
     $PoShModulelInstallEnd = Get-Date
-    $Duration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModulelInstallEnd
-    Write-Host "PowerShell module installation took $($Duration.Hours.ToString("00")):$($Duration.Minutes.ToString("00")):$($Duration.Seconds.ToString("00")) (HH:mm:ss)"
+    $PoShModulelInstallDuration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModulelInstallEnd
+    Write-Host "PowerShell module installation took $($PoShModulelInstallDuration.Hours.ToString("00")):$($PoShModulelInstallDuration.Minutes.ToString("00")):$($PoShModulelInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install VSTS Agent
     $Date = Get-Date -Format yyyyMMdd-HHmmss
     $AgentName = "$AgentNamePrefix-$Date"
     Install-VstsAgent -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false
     $AgentInstallEnd = Get-Date
-    $Duration = New-TimeSpan -Start $PoShModulelInstallEnd -End $AgentInstallEnd
-    Write-Host "Agent installation took $($Duration.Hours.ToString("00")):$($Duration.Minutes.ToString("00")):$($Duration.Seconds.ToString("00")) (HH:mm:ss)"
+    $AgentInstallDuration = New-TimeSpan -Start $PoShModulelInstallEnd -End $AgentInstallEnd
+    Write-Host "Agent installation took $($AgentInstallDuration.Hours.ToString("00")):$($AgentInstallDuration.Minutes.ToString("00")):$($AgentInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Get available Volume size, RAM
     Get-SystemData
 
     # Calculate duration
-    $Duration = New-TimeSpan -Start $StartDate -End (Get-Date)
-    Write-Host "It took $($Duration.Hours.ToString("00")):$($Duration.Minutes.ToString("00")):$($Duration.Seconds.ToString("00")) (HH:mm:ss) to install the required components."
+    $OverallDuration = New-TimeSpan -Start $StartDate -End (Get-Date)
+    Write-Host "It took $($OverallDuration.Hours.ToString("00")):$($OverallDuration.Minutes.ToString("00")):$($OverallDuration.Seconds.ToString("00")) (HH:mm:ss) to install the required components."
     Write-Host "Installation finished at $(Get-Date)"
     Write-Host "Container successfully configured." # Do NOT change this text, as this is the success criteria for the wrapper script.
 
