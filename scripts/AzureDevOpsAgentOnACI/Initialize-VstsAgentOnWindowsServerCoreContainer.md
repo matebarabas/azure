@@ -2,11 +2,11 @@
 
 ## SYNOPSIS
 
-This script creates ACI container instance(s) which run the Azure DevOps (formerly VSTS) Agent, alongside with the requested PowerShell modules and Terraform to enable Azure resource build automation from Azure DevOps CI/CD pipelines.
+This script creates ACI container instance(s) which run the Azure DevOps (formerly VSTS) Agent, alongside with the requested PowerShell modules, json2hcl and Terraform to enable Azure resource build automation from Azure DevOps CI/CD pipelines.
 
 ## DESCRIPTION
 
-This script is used as a wrapper of the container configuration script ("Install-VstsAgentOnWindowsServerCoreContainer.ps1") to create ACI container instance(s) which run the Azure DevOps Agent, alongside with the requested PowerShell modules and Terraform to enable Azure resource build automation from Azure DevOps CI/CD pipelines.
+This script is used as a wrapper of the container configuration script ("Install-VstsAgentOnWindowsServerCoreContainer.ps1") to create ACI container instance(s) which run the Azure DevOps Agent, alongside with the requested PowerShell modules, json2hcl and Terraform to enable Azure resource build automation from Azure DevOps CI/CD pipelines.
 
 It copies the container configuration script to a publicly available storage container of the requested Storage Account, it creates a new Resource Group (if one doesn't exist with the provided name), removes any pre-existing ACI containers with the same name, within the same Resource Group, then creates new ACI container instance(s) based on the provided names and invokes the container configuration script inside the container(s).
 

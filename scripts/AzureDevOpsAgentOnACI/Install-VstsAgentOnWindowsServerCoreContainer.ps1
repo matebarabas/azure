@@ -13,12 +13,12 @@
 
 <#
 .SYNOPSIS
-    This scripts configures a Windows Server Core based container with Terraform, the selected PowerShell modules and 
+    This scripts configures a Windows Server Core based container with Terraform, json2hcl, the selected PowerShell modules and 
     installs and configures the Visual Studio Team Services build agent on it.
 .DESCRIPTION
     This scripts configures a Windows Server Core based container (with the latest version of the 
     microsoft/windowsservercore LTSC image available on Docker Hub),
-    with the latest version of the Azure DevOps agent, Terraform and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
+    with the latest version of the Azure DevOps agent, Terraform, json2hcl and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
     This container is intended to be run as an Azure Container Instance.
     After the successfully configuration, it prints the available disk space, and keeps periodically checking of the 
     vstsagent service is in a running state, keeping the container alive by that.

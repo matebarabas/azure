@@ -2,11 +2,11 @@
 
 ## SYNOPSIS
 
-This scripts configures a Windows Server Core based container with Azure DevOps agent, Terraform, the selected PowerShell modules and installs and configures the Visual Studio Team Services build agent on it.
+This scripts configures a Windows Server Core based container with Azure DevOps agent, Terraform, json2hcl, the selected PowerShell modules and installs and configures the Visual Studio Team Services build agent on it.
 
 ## DESCRIPTION
 
-This scripts downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures a Windows Server Core based container (with the latest version of the microsoft/windowsservercore LTSC image available on Docker Hub), with the latest version of Terraform and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). This container is intended to be run as an Azure Container Instance.
+This scripts downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures a Windows Server Core based container (with the latest version of the microsoft/windowsservercore LTSC image available on Docker Hub), with the latest version of Terraform, json2hcl and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). This container is intended to be run as an Azure Container Instance.
 
 After the successful configuration, it prints the available disk space and keeps periodically checking that the "vstsagent" service is in a running state. The Container's running state is determined by vstsagent service state. Failure of the service will cause the Container instance to be re-initialized. If this happens and the PAT token is still valid, the container will auto-heal itself. If the PAT token has been revoked by this time, the container creation will fail.
 

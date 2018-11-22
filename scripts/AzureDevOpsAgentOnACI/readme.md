@@ -73,7 +73,7 @@ To fulfill these requirements, namely to enable the customer to run Build/Releas
 Requirements summary:
 
 - Scalability: a solution which can both scale-up (i.e. the number of CPU cores and the amount of RAM can be increased) and scale out (multiple instances can be added to support parallel deployments) was desired.
-- Customization: this includes adding extra components, such as PowerShell modules or the Terraform executable, and not having unnecessary and unused components installed.
+- Customization: this includes adding extra components, such as PowerShell modules, json2hcl or the Terraform executable, and not having unnecessary and unused components installed.
 - Security: interactive logons have to be prohibited, incoming requests on all ports of these machines must be denied.
 
 As the customer prefers using PaaS services over IaaS VMs, and has strict security requirements, using the well-documented approach for deploying agents on VMs - what you would normally do - could not come into question.
@@ -103,7 +103,7 @@ The wrapper script can be invoked from any location (including Azure Cloud Shell
 
 ### 2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1
 
-The internal, container configuration script downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures the instance(s) with the latest version of Terraform and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
+The internal, container configuration script downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures the instance(s) with the latest version of Terraform, json2hcl and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
 After the successful configuration, it prints the available disk space and keeps periodically checking that the "vstsagent" service is in running state. Failure of this service will cause the Container instance to be re-initialized. If this happens and the PAT token is still valid, the container will auto-heal itself. If the PAT token has already been revoked, or has been expired by this time, the container re-creation will fail.
 
 ### 2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1
