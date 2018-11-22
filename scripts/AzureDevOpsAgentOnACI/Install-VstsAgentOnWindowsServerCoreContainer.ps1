@@ -177,6 +177,7 @@ param (
     }
 
     function Install-Json2Hcl {
+        
         # Get the list of available Terraform versions
         $Response = Invoke-WebRequest -Uri "https://github.com/kvz/json2hcl/releases" -UseBasicParsing
 
@@ -196,6 +197,7 @@ param (
         # Download and extract Json2HCL
         Write-Output "Downloading Json2HCL ($Version) to $FolderPath..."
         Invoke-WebRequest -Uri $URL -OutFile $FilePath -UseBasicParsing
+        Rename-Item -Path $FolderPath\$FileName -NewName "json2hcl.exe"
 
         # Setting PATH environmental variable for Terraform
         Write-Output "Setting PATH environmental variable for Json2HCL..."
