@@ -314,20 +314,37 @@ param(
                 $CreateAtLeastOneContainer = $true
                 Write-Host "Creating ACI container ($Name)..."
                 
-                # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
-                az container create --resource-group $ResourceGroupName --name $Name --image "microsoft/windowsservercore" --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName" --subscription $SubscriptionName
-                
-                # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
-                # New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
-                #                           -Name $Name `
-                #                           -Image "microsoft/windowsservercore" `
-                #                           -Location $Location `
-                #                           -OsType Windows `
-                #                           -Cpu $Cpu `
-                #                           -MemoryInGB $MemoryInGB `
-                #                           -RestartPolicy Always `
-                #                           -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName" | Out-null
-                
+                if ($PSVersionTable.PSEdition -eq "Core")
+                {
+                    # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
+                    # When running in Cloud Shell, login is not required (has already happened)
+                    if ($null -ne $env:ACC_CLOUD)
+                    {
+                        az container create --resource-group $ResourceGroupName --name $Name --image "microsoft/windowsservercore" --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                    }
+                }
+                elseif ($PSVersionTable.PSEdition -eq "Desktop")
+                {
+                    if ($RequiredPowerShellModules.Count -gt 1)
+                    {
+                        $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
+                    }
+                    # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
+                    New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
+                                            -Name $Name `
+                                            -Image "microsoft/windowsservercore" `
+                                            -Location $Location `
+                                            -OsType Windows `
+                                            -Cpu $Cpu `
+                                            -MemoryInGB $MemoryInGB `
+                                            -RestartPolicy Always `
+                                            -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
+                }
+                else 
+                {
+                    Write-Error "PowerShell version could not be defined. Exiting..."
+                    return
+                } 
             }
             else
             {

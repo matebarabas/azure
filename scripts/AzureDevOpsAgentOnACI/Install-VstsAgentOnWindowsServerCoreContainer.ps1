@@ -94,21 +94,33 @@ param (
             $NewPackageProviderVersion = $NewPackageProvider.Version.ToString()
             Write-Output "Installing Nuget package provider ($NewPackageProviderVersion)..."
 
-            Install-PackageProvider -Name Nuget -Force -Confirm:$false | Out-Null
+            Install-PackageProvider -Name "Nuget" -Force -Confirm:$false | Out-Null
 
+            if (Get-PackageProvider "Nuget")
+            {
+                Write-Output "Nuget package provider ($NewPackageProviderVersion) successfully installed."
+            }
+            else
+            {
+                Write-Error "Nuget package provider ($NewPackageProviderVersion) installation failed."
+            }
             Write-Output "Waiting 10 seconds..."
             Start-Sleep -Seconds 10
         }
 
+        Write-Output "PowerShell modules to install: $RequiredModules"
+        
         foreach ($Module in $RequiredModules)
         {
             if (-not (Get-Module $Module -ErrorAction SilentlyContinue))
             {
+                Write-Output "Getting $Module module..."
+
                 $NewModule = Find-Module $Module
                 $NewModuleVersion = $NewModule.Version.ToString()
 
                 Write-Output "Installing $Module ($NewModuleVersion) module..."
-                               
+                
                 Install-Module -Name $Module -Force -Confirm:$false -SkipPublisherCheck
             }
         }
@@ -119,13 +131,13 @@ param (
 
         param (
 
-            [Parameter(Mandatory=$false,
-                       HelpMessage="Use this parameter to decide if the absolute latest or the latest stable Terraform release should be installed.")]
-            [ValidateNotNullOrEmpty()]
-            [bool]$SkipNonStableReleases = $true
-    
-            )
-        
+        [Parameter(Mandatory=$false,
+                   HelpMessage="Use this parameter to decide if the absolute latest or the latest stable Terraform release should be installed.")]
+        [ValidateNotNullOrEmpty()]
+        [bool]$SkipNonStableReleases = $true
+
+        )
+
         # Get the list of available Terraform versions
         $Response = Invoke-WebRequest -Uri "https://releases.hashicorp.com/terraform" -UseBasicParsing
 
@@ -177,7 +189,7 @@ param (
     }
 
     function Install-Json2Hcl {
-        
+
         # Get the list of available Terraform versions
         $Response = Invoke-WebRequest -Uri "https://github.com/kvz/json2hcl/releases" -UseBasicParsing
 
