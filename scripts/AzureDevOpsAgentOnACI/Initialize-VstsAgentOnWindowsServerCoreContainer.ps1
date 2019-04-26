@@ -320,7 +320,7 @@ param(
                     # When running in Cloud Shell, login is not required (has already happened)
                     if ($null -ne $env:ACC_CLOUD)
                     {
-                        az container create --resource-group $ResourceGroupName --name $Name --image "microsoft/windowsservercore" --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                        az container create --resource-group $ResourceGroupName --name $Name --image "mcr.microsoft.com/windows/servercore:ltsc2016" --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
                     }
                 }
                 elseif ($PSVersionTable.PSEdition -eq "Desktop")
@@ -332,7 +332,7 @@ param(
                     # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
                     New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
                                             -Name $Name `
-                                            -Image "microsoft/windowsservercore" `
+                                            -Image "mcr.microsoft.com/windows/servercore:ltsc2016" `
                                             -Location $Location `
                                             -OsType Windows `
                                             -Cpu $Cpu `
