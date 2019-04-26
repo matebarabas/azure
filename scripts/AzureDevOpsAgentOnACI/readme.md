@@ -7,22 +7,22 @@ This article provides a solution for running Azure DevOps agents (Build/Release 
 ## 0. Table of content
 
 - [Azure DevOps (formerly VSTS) Agents on Windows Server Core containers, using Azure Container Instances (ACI)](#azure-devops-formerly-vsts-agents-on-windows-server-core-containers-using-azure-container-instances-aci)
-    - [0. Table of content](#0-table-of-content)
-    - [1. Concept](#1-concept)
-        - [1.1. Azure DevOps](#11-azure-devops)
-        - [1.2. Using Azure DevOps for managing Azure infrastructure](#12-using-azure-devops-for-managing-azure-infrastructure)
-        - [1.3. Azure Container Instances](#13-azure-container-instances)
-        - [1.4. Problem statement](#14-problem-statement)
-    - [2. How does the solution work?](#2-how-does-the-solution-work)
-        - [2.1. Initialize-VstsAgentOnWindowsServerCoreContainer.ps1](#21-initialize-vstsagentonwindowsservercorecontainerps1)
-        - [2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1](#22-install-vstsagentonwindowsservercorecontainerps1)
-        - [2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1](#23-remove-vstsagentonwindowsservercorecontainerps1)
-        - [2.4. Diagram](#24-diagram)
-    - [3. Prerequisites](#3-prerequisites)
-    - [4. How to manage the solution's lifecycle](#4-how-to-manage-the-solutions-lifecycle)
-        - [4.1. Initialize ACI containers in Azure Cloud Shell](#41-initialize-aci-containers-in-azure-cloud-shell)
-        - [4.2. Update ACI containers](#42-update-aci-containers)
-        - [4.3. Delete ACI containers](#43-delete-aci-containers)
+  - [0. Table of content](#0-table-of-content)
+  - [1. Concept](#1-concept)
+    - [1.1. Azure DevOps](#11-azure-devops)
+    - [1.2. Using Azure DevOps for managing Azure infrastructure](#12-using-azure-devops-for-managing-azure-infrastructure)
+    - [1.3. Azure Container Instances](#13-azure-container-instances)
+    - [1.4. Problem statement](#14-problem-statement)
+  - [2. How does the solution work?](#2-how-does-the-solution-work)
+    - [2.1. Initialize-VstsAgentOnWindowsServerCoreContainer.ps1](#21-initialize-vstsagentonwindowsservercorecontainerps1)
+    - [2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1](#22-install-vstsagentonwindowsservercorecontainerps1)
+    - [2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1](#23-remove-vstsagentonwindowsservercorecontainerps1)
+    - [2.4. Diagram](#24-diagram)
+  - [3. Prerequisites](#3-prerequisites)
+  - [4. How to manage the solution's lifecycle](#4-how-to-manage-the-solutions-lifecycle)
+    - [4.1. Initialize ACI containers in Azure Cloud Shell](#41-initialize-aci-containers-in-azure-cloud-shell)
+    - [4.2. Update ACI containers](#42-update-aci-containers)
+    - [4.3. Delete ACI containers](#43-delete-aci-containers)
 
 ## 1. Concept
 
@@ -162,7 +162,7 @@ Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscri
 
 ### 4.2. Update ACI containers
 
-- If you would like to update your existing ACI containers, you can re-run the same ".\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1" script using the "-RequiredPowerShellModules" switch as follows:
+- If you would like to update your existing ACI containers, you can re-run the same ".\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1" script using the "-ReplaceExistingContainer" switch as follows:
 
 ```powershell
 Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>", "<container n name>" -Location "<azure region 2>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -PoolName "<agent pool name>" -ReplaceExistingContainer
