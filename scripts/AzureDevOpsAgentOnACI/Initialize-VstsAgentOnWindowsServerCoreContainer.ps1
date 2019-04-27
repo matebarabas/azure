@@ -56,6 +56,8 @@
     Name of the Storage Account to upload the script file to, which is then invoke by this wrapper.
 .PARAMETER StorageContainerName
     Name of the storage container to upload the script file to be invoked by this wrapper.
+.PARAMETER ScriptPublicUrl
+    Publicly available URL of the internal script file to be invoked by this wrapper. This can be used optionally, instead of defining the Storage Account name. You need to make the internal script available on this URL as a prerequisite.
 .PARAMETER ScriptFileName
     Name of the script file to invoke by this wrapper.
 .PARAMETER VSTSAccountName
@@ -68,7 +70,13 @@
     List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
-    This creates uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+.EXAMPLE
+    .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
+    This downloads the container configuration script directly from its default location on GitHub, and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+.EXAMPLE
+    .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -ScriptPublicUrl "<public URL of the internal config script>"
+    This downloads the container configuration script directly from the provided location (this can be anything, e.g. GitHub, a public Storage Account, or any publicly available URL), and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -StorageContainerName "publicvstsscript" -MemoryInGB 1 -Cpu 1 -ScriptFileName "Install-VstsAgentOnWindowsServerCoreContainer.ps1" -VSTSAccountName "<Azure DevOps Account name>" -PATToken "<PAT token>" -PoolName "<Azure DevOps Agent Pool name>" -RequiredPowerShellModules "AzureRM", "AzureAD", "Pester"
     This installs 2 Azure Container Instances with all the possible values manually defined.
@@ -122,7 +130,7 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$Location,
 
-    [Parameter(Mandatory=$true,
+    [Parameter(Mandatory=$false,
                HelpMessage="Name of the Storage Account to upload the script file to, which is then invoke by this wrapper.")]
     [ValidateNotNullOrEmpty()]
     [string]$StorageAccountName,
@@ -132,6 +140,11 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$StorageContainerName="publicvstsscript",
     
+    [Parameter(Mandatory=$false,
+               HelpMessage="Publicly available URL of the internal script file to be invoked by this wrapper. This can be used optionally, instead of defining the Storage Account name. You need to make the internal script available on this URL as a prerequisite.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$ScriptPublicUrl="https://raw.githubusercontent.com/matebarabas/azure/master/scripts/AzureDevOpsAgentOnACI/Install-VstsAgentOnWindowsServerCoreContainer.ps1",
+
     [Parameter(Mandatory=$false,
                HelpMessage="Name of the script file to invoke by this wrapper.")]
     [ValidateNotNullOrEmpty()]
@@ -284,8 +297,16 @@ param(
     }
 
     function New-Container {
-        # Create & Install containers
-        $ScriptURL = "https://$StorageAccountName.blob.core.windows.net/$StorageContainerName/$ScriptFileName"
+        # Create & Install containers        
+
+        if ($StorageAccountName) #if you want to upload the internal script to a Storage Account
+        {
+            $ScriptURL = "https://$StorageAccountName.blob.core.windows.net/$StorageContainerName/$ScriptFileName"
+        }
+        else # if you want to use the internal script from a public location (e.g. GitHub)
+        {
+            $ScriptURL = $ScriptPublicUrl
+        }
 
         foreach ($Name in $ContainerName)
         {
@@ -427,8 +448,11 @@ param(
     # Login to Azure and select Subscription
     Set-AzureContext -SubscriptionName $SubscriptionName
 
-    # Upload the configuration script to a Storage Account
-    Copy-ScriptToStorageAccount -StorageAccountName $StorageAccountName -StorageContainerName $StorageContainerName -ScriptFileName $ScriptFileName
+    if ($StorageAccountName)
+    {
+        # Upload the configuration script to a Storage Account
+        Copy-ScriptToStorageAccount -StorageAccountName $StorageAccountName -StorageContainerName $StorageContainerName -ScriptFileName $ScriptFileName
+    }
 
     # Create Resource Group for containers
     if (-not (Get-AzureRmResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue))
