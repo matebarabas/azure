@@ -359,7 +359,8 @@ param(
             {
                 $CreateAtLeastOneContainer = $true
                 Write-Host "Creating ACI container ($Name)..."
-                
+                Write-Output "Instantiating a container can take a few minutes, depending on the image size and whether or not the container image is cached in the ACI platfrom."
+
                 if ($RequiredPowerShellModules.Count -gt 1)
                 {
                     $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
@@ -439,7 +440,7 @@ param(
 
         if ($CreateAtLeastOneContainer)
         {
-            Write-Output "ACI container creation tasks have been submitted. An iteration of creating ACI container(s) usually takes about 10 minutes as these processes run in parallel."
+            Write-Output "ACI container creation tasks have been submitted. It usually takes about 10 minutes to fully provision a container."
             Write-Output "New ACI container(s) are being built..."
 
             # Periodically check if all containers have been configured
