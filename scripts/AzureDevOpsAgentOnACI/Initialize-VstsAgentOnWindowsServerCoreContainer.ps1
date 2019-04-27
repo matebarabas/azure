@@ -68,6 +68,10 @@
     Name of the Agent pool. It defaults to the "Default" pool when not defined.
 .PARAMETER RequiredPowerShellModules
     List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester
+.PARAMETER ContainerImage
+    Fully qualified name of the container image, optionally including tags.
+.PARAMETER AcrPassword
+    Access password to the Azure Container Registry (ACR)
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
     This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
@@ -83,6 +87,10 @@
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region 2>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -PoolName "<agent pool name>" -ReplaceExistingContainer
     This removes any existing ACI containers with the provided names, then creates new ones with the requested values.
+.EXAMPLE
+    .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -ContainerImage <myacr.azurecr.io/myrepo/myimage:v1> -AcrPassword <ACR password>
+    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, based on the custom image provided, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+
 .INPUTS
     <none>
 .OUTPUTS
@@ -168,7 +176,17 @@ param(
     [Parameter(Mandatory=$false,
                HelpMessage="List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester")]
     [ValidateNotNullOrEmpty()]
-    [array]$RequiredPowerShellModules=@("AzureRM", "AzureAD", "Pester")
+    [array]$RequiredPowerShellModules=@("AzureRM", "AzureAD", "Pester"),
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Access password to the Azure Container Registry (ACR)")]
+    [ValidateNotNullOrEmpty()]
+    [string]$AcrPassword,
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Fully qualified name of the container image, optionally including tags.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$ContainerImage = "microsoft/windowsservercore:ltsc2016" # or "mcr.microsoft.com/windows/servercore:ltsc2016"
 
 )
 
@@ -296,7 +314,13 @@ param(
 
     }
 
+
     function New-Container {
+        param (
+            [Parameter(Mandatory=$false)][string]$AcrPassword,
+            [Parameter(Mandatory=$true)][string]$ContainerImage
+        )
+
         # Create & Install containers        
 
         if ($StorageAccountName) #if you want to upload the internal script to a Storage Account
@@ -310,6 +334,7 @@ param(
 
         foreach ($Name in $ContainerName)
         {
+
             $CanCreateContainerWithProvidedName = $true
             $ExistingContainer = Get-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName -Name $Name -ErrorAction SilentlyContinue
             if ($ExistingContainer)
@@ -335,37 +360,79 @@ param(
                 $CreateAtLeastOneContainer = $true
                 Write-Host "Creating ACI container ($Name)..."
                 
-                if ($PSVersionTable.PSEdition -eq "Core")
+                if ($AcrPassword)
                 {
-                    # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
-                    # When running in Cloud Shell, login is not required (has already happened)
-                    if ($null -ne $env:ACC_CLOUD)
+                    $SecPasswd = ConvertTo-SecureString $AcrPassword -AsPlainText -Force
+                    $RegistryName = $ContainerImage.Split(".")[0]
+                    $MyCred = New-Object System.Management.Automation.PSCredential ($RegistryName, $SecPasswd)
+
+                    if ($PSVersionTable.PSEdition -eq "Core")
                     {
-                        az container create --resource-group $ResourceGroupName --name $Name --image "mcr.microsoft.com/windows/servercore:ltsc2016" --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                        # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
+                        # When running in Cloud Shell, login is not required (has already happened)
+                        if ($null -ne $env:ACC_CLOUD)
+                        {
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --registry-password $AcrPassword --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                        }
                     }
-                }
-                elseif ($PSVersionTable.PSEdition -eq "Desktop")
-                {
-                    if ($RequiredPowerShellModules.Count -gt 1)
+                    elseif ($PSVersionTable.PSEdition -eq "Desktop")
                     {
-                        $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
+                        if ($RequiredPowerShellModules.Count -gt 1)
+                        {
+                            $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
+                        }
+                        # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
+                        New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
+                                                -Name $Name `
+                                                -Image $ContainerImage `
+                                                -Location $Location `
+                                                -OsType Windows `
+                                                -Cpu $Cpu `
+                                                -MemoryInGB $MemoryInGB `
+                                                -RestartPolicy Always `
+                                                -RegistryCredential $MyCred `
+                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
                     }
-                    # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
-                    New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
-                                            -Name $Name `
-                                            -Image "mcr.microsoft.com/windows/servercore:ltsc2016" `
-                                            -Location $Location `
-                                            -OsType Windows `
-                                            -Cpu $Cpu `
-                                            -MemoryInGB $MemoryInGB `
-                                            -RestartPolicy Always `
-                                            -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
+                    else 
+                    {
+                        Write-Error "PowerShell version could not be defined. Exiting..."
+                        return
+                    }
                 }
                 else 
                 {
-                    Write-Error "PowerShell version could not be defined. Exiting..."
-                    return
-                } 
+                    if ($PSVersionTable.PSEdition -eq "Core")
+                    {
+                        # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
+                        # When running in Cloud Shell, login is not required (has already happened)
+                        if ($null -ne $env:ACC_CLOUD)
+                        {
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                        }
+                    }
+                    elseif ($PSVersionTable.PSEdition -eq "Desktop")
+                    {
+                        if ($RequiredPowerShellModules.Count -gt 1)
+                        {
+                            $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
+                        }
+                        # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
+                        New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
+                                                -Name $Name `
+                                                -Image $ContainerImage `
+                                                -Location $Location `
+                                                -OsType Windows `
+                                                -Cpu $Cpu `
+                                                -MemoryInGB $MemoryInGB `
+                                                -RestartPolicy Always `
+                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
+                    }
+                    else 
+                    {
+                        Write-Error "PowerShell version could not be defined. Exiting..."
+                        return
+                    }
+                }
             }
             else
             {
@@ -462,6 +529,6 @@ param(
     }
 
     # Create containers
-    New-Container
+    New-Container -ContainerImage $ContainerImage
 
 #endregion
