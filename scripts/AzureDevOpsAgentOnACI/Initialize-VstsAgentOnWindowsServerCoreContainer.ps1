@@ -360,6 +360,11 @@ param(
                 $CreateAtLeastOneContainer = $true
                 Write-Host "Creating ACI container ($Name)..."
                 
+                if ($RequiredPowerShellModules.Count -gt 1)
+                {
+                    $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
+                }
+
                 if ($AcrPassword)
                 {
                     $SecPasswd = ConvertTo-SecureString $AcrPassword -AsPlainText -Force
@@ -377,10 +382,6 @@ param(
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
                     {
-                        if ($RequiredPowerShellModules.Count -gt 1)
-                        {
-                            $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
-                        }
                         # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
                         New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
                                                 -Name $Name `
@@ -412,10 +413,6 @@ param(
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
                     {
-                        if ($RequiredPowerShellModules.Count -gt 1)
-                        {
-                            $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
-                        }
                         # Alternative option, using AzureRM PowerShell commandlet (this doesn't work in Azure Cloud Shell, as the -Command parameter is not available in the core version of this cmdlet)
                         New-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName `
                                                 -Name $Name `
