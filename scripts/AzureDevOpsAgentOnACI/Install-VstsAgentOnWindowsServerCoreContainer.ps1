@@ -223,6 +223,60 @@ param (
 
     }
 
+    function Install-AzureCli {
+        Write-Output "Searching for the latest version of Azure CLI"
+        $AzureCliUrl = "https://aka.ms/installazurecliwindows"
+        $AzureCliInstallerFullPath = "C:\azurecli.msi"
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method Head
+        $AzureCliInstallerFileName = $response.BaseResponse.ResponseUri.AbsolutePath.Split("/")[-1]
+        Write-Output "Downloading Azure CLI installer ($AzureCliInstallerFileName)"
+        Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
+        if (Test-Path $AzureCliInstallerFullPath)
+        {
+            Write-Output "Azure CLI installer ($AzureCliInstallerFileName) was successfully downloaded as $AzureCliInstallerFullPath"
+            Write-Output "Installing Azure CLI ($AzureCliInstallerFileName)"
+            Start-Process msiexec.exe -Wait -ArgumentList "/i $AzureCliInstallerFullPath /quiet /passive /qn"
+            $AzureCli = (Get-WmiObject -Class win32_product) | Where-Object {$_.name -like "*Microsoft Azure CLI*"}
+            if ($AzureCli)
+            {
+                Write-Output "Azure CLI (version $($AzureCli.Version) was successfully installed)"
+                Remove-Item -Path $AzureCliInstallerFullPath -Force -Confirm:$false
+            }
+            else
+            {
+                Write-Error "Azure CLI could not be installed"
+            }
+        }
+    }
+
+    function Install-PowerShellCore {
+        Write-Output "Searching for the latest version of PowerShell Core"
+        $PwshInstallerFullPath = "c:\pwsh.msi"
+        $response = Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/PowerShell/PowerShell/releases"
+        $PwshInstallerRelativeUrl = ($response.Links.href | Where-Object {$_ -like "*win-x64.msi" -and $_ -notlike "*preview*" -and $_ -notlike "*rc*"})[0]
+        $PwshInstallerFileName = $PwshInstallerRelativeUrl.Split("/")[-1]
+        Write-Output "Downloading PowerShell Core ($PwshInstallerFileName)"
+        $PwshInstallerUrl = "https://github.com" + $PwshInstallerRelativeUrl
+        Invoke-WebRequest -UseBasicParsing -Uri $PwshInstallerUrl -OutFile $PwshInstallerFullPath
+        if (Test-Path $PwshInstallerFullPath)
+        {
+            Write-Output "PowerShell Core installer ($PwshInstallerFileName) was successfully downloaded as $PwshInstallerFullPath"
+            Write-Output "Installing PowerShell Core ($PwshInstallerFileName)"
+            Start-Process msiexec.exe -Wait -ArgumentList "/i $PwshInstallerFullPath /quiet /passive /qn"
+
+            $Pwsh = (Get-WmiObject -Class win32_product) | Where-Object {$_.name -like "*PowerShell*-x64"}
+            if ($Pwsh)
+            {
+                Write-Output "PowerShell Core (version $($Pwsh.Version) was successfully installed)"
+                Remove-Item -Path $PwshInstallerFullPath -Force -Confirm:$false
+            }
+            else
+            {
+                Write-Error "PowerShell Core could not be installed"
+            }
+        }
+    }
+
     function Install-VstsAgent {
         # Downloads the Visual Studio Online Build Agent, installs on the new machine, registers with the Visual
         # Studio Online account, and adds to the specified build agent pool
@@ -697,6 +751,11 @@ param (
     $PoShModulelInstallDuration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModulelInstallEnd
     Write-Host "PowerShell module installation took $($PoShModulelInstallDuration.Hours.ToString("00")):$($PoShModulelInstallDuration.Minutes.ToString("00")):$($PoShModulelInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
+    # Install Azure CLI
+    Install-AzureCli
+
+    # Install PowerShell Core
+    Install-PowerShellCore
     # Install VSTS Agent
     $Date = Get-Date -Format yyyyMMdd-HHmmss
     $AgentName = "$AgentNamePrefix-$Date"
