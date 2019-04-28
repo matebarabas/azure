@@ -753,9 +753,16 @@ param (
 
     # Install Azure CLI
     Install-AzureCli
+    $AzureCliInstallEnd = Get-Date
+    $AzureCliInstallDuration = New-TimeSpan -Start $PoShModuleInstallEnd -End $AzureCliInstallEnd
+    Write-Output "Azure CLI installation took $($AzureCliInstallDuration.Hours.ToString("00")):$($AzureCliInstallDuration.Minutes.ToString("00")):$($AzureCliInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install PowerShell Core
     Install-PowerShellCore
+    $PoShCoreInstallEnd = Get-Date
+    $PoShCoreInstallDuration = New-TimeSpan -Start $AzureCliInstallEnd -End $PoShCoreInstallEnd
+    Write-Output "PowerShell Core installation took $($PoShCoreInstallDuration.Hours.ToString("00")):$($PoShCoreInstallDuration.Minutes.ToString("00")):$($PoShCoreInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+    
     # Install VSTS Agent
     $Date = Get-Date -Format yyyyMMdd-HHmmss
     $AgentName = "$AgentNamePrefix-$Date"
