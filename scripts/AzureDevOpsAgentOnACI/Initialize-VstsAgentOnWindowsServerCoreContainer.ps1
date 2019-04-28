@@ -186,7 +186,7 @@ param(
     [Parameter(Mandatory=$false,
                HelpMessage="Fully qualified name of the container image, optionally including tags.")]
     [ValidateNotNullOrEmpty()]
-    [string]$ContainerImage = "microsoft/windowsservercore:10.0.14393.2791" # or "mcr.microsoft.com/windows/servercore:ltsc2016"
+    [string]$ContainerImage # e.g. "microsoft/windowsservercore:10.0.14393.2791" or "mcr.microsoft.com/windows/servercore:ltsc2016"
 
 )
 
@@ -503,6 +503,30 @@ param(
         }
     }
 
+    function Get-LatestCachedImageVersion {
+        # This function returns the name of the latest version of the 
+        # microsoft/windowsservercore image that is cached in the ACI platform
+
+        # Authenticate to invoke Azure REST API
+        $azProfile = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile
+        $currentAzureContext = Get-AzureRmContext
+        $profileClient = New-Object Microsoft.Azure.Commands.ResourceManager.Common.RMProfileClient($azProfile)
+        $token = $profileClient.AcquireAccessToken($currentAzureContext.Tenant.TenantId)
+        $accessToken = $token.AccessToken
+
+        $RestCall = @{
+            Method  = "Get"
+            Uri     = "https://management.azure.com/subscriptions/$($currentAzureContext.Subscription)/providers/Microsoft.ContainerInstance/locations/$Location/cachedImages?api-version=2018-10-01"
+            Headers = @{
+                Authorization = "Bearer " + $AccessToken
+            }
+        }
+
+        $result = Invoke-RestMethod @RestCall
+
+        $LatestCachedImage = (($result.value | Where-Object {$_.image -match "microsoft/windowsservercore"} | Sort-Object image)[-1]).image
+        return $LatestCachedImage
+    }
 #endregion
 
 #region Main
@@ -527,6 +551,10 @@ param(
     }
 
     # Create containers
+    if (-not $ContainerImage)
+    {
+        $ContainerImage = Get-LatestCachedImageVersion
+    }
     New-Container -ContainerImage $ContainerImage
 
 #endregion
