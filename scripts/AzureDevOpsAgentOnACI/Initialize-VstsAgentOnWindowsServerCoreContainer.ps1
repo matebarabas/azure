@@ -67,29 +67,29 @@
 .PARAMETER PoolName
     Name of the Agent pool. It defaults to the "Default" pool when not defined.
 .PARAMETER RequiredPowerShellModules
-    List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester
+    List of the required PowerShell modules, e.g. Az, AzureAD, Pester
 .PARAMETER ContainerImage
     Fully qualified name of the container image, optionally including tags.
 .PARAMETER AcrPassword
     Access password to the Azure Container Registry (ACR)
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
-    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "Az", "AzureAD", "Pester").
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
-    This downloads the container configuration script directly from its default location on GitHub, and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+    This downloads the container configuration script directly from its default location on GitHub, and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "Az", "AzureAD", "Pester").
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -ScriptPublicUrl "<public URL of the internal config script>"
-    This downloads the container configuration script directly from the provided location (this can be anything, e.g. GitHub, a public Storage Account, or any publicly available URL), and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+    This downloads the container configuration script directly from the provided location (this can be anything, e.g. GitHub, a public Storage Account, or any publicly available URL), and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "Az", "AzureAD", "Pester").
 .EXAMPLE
-    .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -StorageContainerName "publicvstsscript" -MemoryInGB 1 -Cpu 1 -ScriptFileName "Install-VstsAgentOnWindowsServerCoreContainer.ps1" -VSTSAccountName "<Azure DevOps Account name>" -PATToken "<PAT token>" -PoolName "<Azure DevOps Agent Pool name>" -RequiredPowerShellModules "AzureRM", "AzureAD", "Pester"
+    .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -StorageContainerName "publicvstsscript" -MemoryInGB 1 -Cpu 1 -ScriptFileName "Install-VstsAgentOnWindowsServerCoreContainer.ps1" -VSTSAccountName "<Azure DevOps Account name>" -PATToken "<PAT token>" -PoolName "<Azure DevOps Agent Pool name>" -RequiredPowerShellModules "Az", "AzureAD", "Pester"
     This installs 2 Azure Container Instances with all the possible values manually defined.
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region 2>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -PoolName "<agent pool name>" -ReplaceExistingContainer
     This removes any existing ACI containers with the provided names, then creates new ones with the requested values.
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>" -ContainerImage <myacr.azurecr.io/myrepo/myimage:v1> -AcrPassword <ACR password>
-    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, based on the custom image provided, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "AzureRM", "AzureAD", "Pester").
+    This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, based on the custom image provided, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "Az", "AzureAD", "Pester").
 
 .INPUTS
     <none>
@@ -174,9 +174,9 @@ param(
     [string]$PoolName="Default",
 
     [Parameter(Mandatory=$false,
-               HelpMessage="List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester")]
+               HelpMessage="List of the required PowerShell modules, e.g. Az, AzureAD, Pester")]
     [ValidateNotNullOrEmpty()]
-    [array]$RequiredPowerShellModules=@("AzureRM", "AzureAD", "Pester"),
+    [array]$RequiredPowerShellModules=@("Az", "AzureAD", "Pester"),
 
     [Parameter(Mandatory=$false,
                HelpMessage="Access password to the Azure Container Registry (ACR)")]
@@ -374,7 +374,7 @@ param(
 
                     if ($PSVersionTable.PSEdition -eq "Core")
                     {
-                        # The AZ CLI has to be used, as the required -Command parameter is note available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
+                        # The AZ CLI has to be used, as the required -Command parameter is not available in the core version of the related AzureRM PowerShell module in Azure Cloud Shell.
                         # When running in Cloud Shell, login is not required (has already happened)
                         if ($null -ne $env:ACC_CLOUD)
                         {

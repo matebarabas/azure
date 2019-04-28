@@ -103,7 +103,7 @@ The wrapper script can be invoked from any location (including Azure Cloud Shell
 
 ### 2.2. Install-VstsAgentOnWindowsServerCoreContainer.ps1
 
-The internal, container configuration script downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures the instance(s) with the latest version of Terraform, json2hcl and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
+The internal, container configuration script downloads and installs the latest available version of the Azure DevOps agent, and registers the instance(s) to the selected Agent Pool. It also configures the instance(s) with the latest version of Terraform, json2hcl and the selected PowerShell modules (by default Az, AzureAD, Pester).
 After the successful configuration, it prints the available disk space and keeps periodically checking that the "vstsagent" service is in running state. Failure of this service will cause the Container instance to be re-initialized. If this happens and the PAT token is still valid, the container will auto-heal itself. If the PAT token has already been revoked, or has been expired by this time, the container re-creation will fail.
 
 ### 2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1

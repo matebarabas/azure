@@ -18,7 +18,7 @@
 .DESCRIPTION
     This scripts configures a Windows Server Core based container (with the latest version of the 
     microsoft/windowsservercore LTSC image available on Docker Hub),
-    with the latest version of the Azure DevOps agent, Terraform, json2hcl and the selected PowerShell modules (by default AzureRM, AzureAD, Pester). 
+    with the latest version of the Azure DevOps agent, Terraform, json2hcl and the selected PowerShell modules (by default Az, AzureAD, Pester). 
     This container is intended to be run as an Azure Container Instance.
     After the successfully configuration, it prints the available disk space, and keeps periodically checking of the 
     vstsagent service is in a running state, keeping the container alive by that.
@@ -31,15 +31,15 @@
 .PARAMETER PoolName
     Name of the Agent pool. It defaults to the "Default" pool when not defined.
 .PARAMETER RequiredPowerShellModules
-    List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester
+    List of the required PowerShell modules, e.g. Az, AzureAD, Pester
 .EXAMPLE
     .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>"
-    This installs all the components with the default configuration (Default Agent Pool, "AzureRM", "AzureAD", "Pester" PowerShell modules, randomly generated agent name).
+    This installs all the components with the default configuration (Default Agent Pool, "Az", "AzureAD", "Pester" PowerShell modules, randomly generated agent name).
 .EXAMPLE
     .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>" -AgentNamePrefix "<prefix of the Azure DevOps agent's name>" -PoolName "CoreContainers"
     This installs all the components with the defined Agent name, and Pool name, with the default PowerShell modules.
 .EXAMPLE
-    .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>" -AgentNamePrefix "<prefix of the Azure DevOps agent's name>" -PoolName "CoreContainers" -RequiredPowerShellModules "AzureRM", "AzureAD", "Pester"
+    .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>" -AgentNamePrefix "<prefix of the Azure DevOps agent's name>" -PoolName "CoreContainers" -RequiredPowerShellModules "Az", "AzureAD", "Pester"
     This installs all the components with the defined Agent name, Pool name, and PowerShell modules.
 .INPUTS
     <none>
@@ -75,9 +75,9 @@ param (
     [string]$PoolName="Default",
 
     [Parameter(Mandatory=$false,
-               HelpMessage="List of the required PowerShell modules, e.g. AzureRM, AzureAD, Pester")]
+               HelpMessage="List of the required PowerShell modules, e.g. Az, AzureAD, Pester")]
     [ValidateNotNullOrEmpty()]
-    [array]$RequiredPowerShellModules=@("AzureRM", "AzureAD", "Pester")
+    [array]$RequiredPowerShellModules=@("Az", "AzureAD", "Pester")
 
 )
 
