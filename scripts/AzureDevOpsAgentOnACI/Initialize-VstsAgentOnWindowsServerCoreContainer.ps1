@@ -358,7 +358,7 @@ param(
             if ($CanCreateContainerWithProvidedName)
             {
                 $CreateAtLeastOneContainer = $true
-                Write-Host "Creating ACI container ($Name)..."
+                Write-Output "Creating ACI container ($Name) with the image of $ContainerImage..."
                 Write-Output "Instantiating a container can take a few minutes, depending on the image size and whether or not the container image is cached in the ACI platfrom."
 
                 if ($RequiredPowerShellModules.Count -gt 1)
@@ -532,7 +532,7 @@ param(
 #region Main
     # Report start time
     $StartDate = Get-Date
-    Write-Host "Started at $StartDate..."
+    Write-Output "Started at $StartDate..."
 
     # Login to Azure and select Subscription
     Set-AzureContext -SubscriptionName $SubscriptionName
