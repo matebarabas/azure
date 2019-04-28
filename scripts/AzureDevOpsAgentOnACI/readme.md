@@ -176,7 +176,7 @@ Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscri
 - To remove the ACI containers that are no longer required, run the below script:
 
 ```powershell
-Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>", "<container n name>"
+Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>", "<container n name>" -PatToken "<pat token to log in>" -AzureDevOpsAccountName "<ADOS account name>" -AgentPoolName "<name of the Agent Pool>"
 ```
 
 - Once the containers have been removed, this script also unregisters the agents from the Agent Pool on the Azure DevOps portal.
