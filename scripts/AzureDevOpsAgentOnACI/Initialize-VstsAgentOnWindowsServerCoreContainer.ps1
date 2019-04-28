@@ -440,7 +440,7 @@ param(
 
         if ($CreateAtLeastOneContainer)
         {
-            Write-Output "ACI container creation tasks have been submitted. It usually takes about 10 minutes to fully provision a container."
+            Write-Output "ACI container creation tasks have been submitted. When using a cached image, it usually takes about 10 minutes to fully provision a container."
             Write-Output "New ACI container(s) are being built..."
 
             # Periodically check if all containers have been configured
