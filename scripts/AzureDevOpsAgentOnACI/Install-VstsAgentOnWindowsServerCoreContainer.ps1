@@ -747,9 +747,9 @@ param (
 
     # Install Powershell Modules
     Install-PowerShellModules -RequiredModules $RequiredPowerShellModules
-    $PoShModulelInstallEnd = Get-Date
-    $PoShModulelInstallDuration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModulelInstallEnd
-    Write-Host "PowerShell module installation took $($PoShModulelInstallDuration.Hours.ToString("00")):$($PoShModulelInstallDuration.Minutes.ToString("00")):$($PoShModulelInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+    $PoShModuleInstallEnd = Get-Date
+    $PoShModuleInstallDuration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModuleInstallEnd
+    Write-Host "PowerShell module installation took $($PoShModuleInstallDuration.Hours.ToString("00")):$($PoShModuleInstallDuration.Minutes.ToString("00")):$($PoShModuleInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Azure CLI
     Install-AzureCli
@@ -768,7 +768,7 @@ param (
     $AgentName = "$AgentNamePrefix-$Date"
     Install-VstsAgent -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false
     $AgentInstallEnd = Get-Date
-    $AgentInstallDuration = New-TimeSpan -Start $PoShModulelInstallEnd -End $AgentInstallEnd
+    $AgentInstallDuration = New-TimeSpan -Start $PoShCoreInstallEnd -End $AgentInstallEnd
     Write-Host "Agent installation took $($AgentInstallDuration.Hours.ToString("00")):$($AgentInstallDuration.Minutes.ToString("00")):$($AgentInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Get available Volume size, RAM
