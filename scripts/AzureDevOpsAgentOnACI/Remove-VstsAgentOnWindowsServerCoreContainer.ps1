@@ -23,26 +23,37 @@
     Name of the Resource Group.
 .PARAMETER ContainerName
     Name of the ACI container(s).
+.PARAMETER PatToken
+    PAT token required to log in to Azure DevOps to delete the Agent's registration from the pool.
+.PARAMETER AzureDevOpsAccountName
+    Name of the Azure DevOps account that the Agent is registered to.
+.PARAMETER AgentPoolName
+    Name of the Agent Pool that holds the Agent to delete.
 .EXAMPLE
-    .\Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>"
-    This removes the 2 containers requested. It leaves the Resource Group (and other resources within) intact.
+    .\Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -PatToken "<pat token to log in>" -AzureDevOpsAccountName "<ADOS account name>" -AgentPoolName "<name of the Agent Pool>"
+    This removes the 2 requested containers and their registrations from Azure DevOps. It leaves the Resource Group (and other resources within) intact.
 .INPUTS
     <none>
 .OUTPUTS
     <none>
 .NOTES
-    Version:        1.0
+    Version:        1.1
     Author:         Mate Barabas
     Creation Date:  2018-08-29
+    Change log:
+    - v1.1 (2019-04-06): the script now removes the Agent's registration from the Agent pool
 #>
 
 param(
 
     [Parameter(Mandatory=$true)][string]$SubscriptionName,
     [Parameter(Mandatory=$true)][string]$ResourceGroupName,
-    [Parameter(Mandatory=$true)][array]$ContainerName
+    [Parameter(Mandatory=$true)][array]$ContainerName,
+    [Parameter(Mandatory=$true)][string]$PatToken, #Personal access token
+    [Parameter(Mandatory=$true)][string]$AzureDevOpsAccountName,  #Azure DevOps account name
+    [Parameter(Mandatory=$true)][string]$AgentPoolName #Azure DevOps Agent pool name
 
-)
+   )
 
 
 #region Functions
@@ -101,7 +112,7 @@ param(
             $Container = Get-AzureRmContainerGroup -ResourceGroupName $ResourceGroupName -Name $Name -ErrorAction SilentlyContinue
             if (-not $Container)
             {
-                Write-Error "No ACI container exists with the provided name ($Name)."
+                Write-Warning "No ACI container exists with the provided name ($Name)."
             }
             else 
             {
@@ -113,11 +124,97 @@ param(
                 if ($null -eq $Container)
                 {
                     Write-Output "ACI container ""$Name"" successfully deleted."
-                    Write-Warning "One or more containers have been deleted. Don't forget to clean your Agent pool in VSTS (remove any agents that were created in a previous iteration and are now offline)!"
+                    if (-not ($PatToken -and $AgentPoolName -and $AzureDevOpsAccountName))
+                    {
+                        Write-Warning "One or more containers have been deleted. Don't forget to clean your Agent pool in Azure DevOps (remove any agents that were created in a previous iteration and are now offline)!"
+                    }
                 }
             }
         }
 
+    }
+
+    function Remove-AzureDevOpsAgentFromPool {
+        Param(
+            [string]$PatToken, #Personal access token
+            [string]$AzureDevOpsAccountName,  #Azure DevOps account name
+            [string]$AgentPoolName,  #Azure DevOps Agent pool name
+            [array]$ContainerName  #Azure DevOps Agent pool name
+        )
+        
+        $base64AuthInfo = [System.Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$($PatToken)"))
+        $Header = @{Authorization=("Basic $base64AuthInfo")}
+
+        # Get Agent Pool
+        Write-Output "Getting Agent Pool ($AgentPoolName)..."
+        $uri = "https://dev.azure.com/$AzureDevOpsAccountName/_apis/distributedtask/pools"
+        $result = Invoke-RestMethod -Uri $uri -Method GET -ContentType "application/json" -Headers $Header
+        $AgentPool = $result.value| Where-Object {$_.Name -eq "$AgentPoolName"}
+        $AgentPoolId = $AgentPool.id
+
+        if (-not $AgentPoolId)
+        {
+            Write-Error "The Agent Pool ($AgentPoolName) doesn't exist!"
+        }
+        else
+        {
+            # Get Agents
+            Write-Output "Getting Agents from Pool..."
+            $uri = "https://dev.azure.com/$AzureDevOpsAccountName/_apis/distributedtask/pools/$AgentPoolId/agents?includeCapabilities=false&includeAssignedRequest=true"
+            $result = Invoke-RestMethod -Uri $uri -Method GET -ContentType "application/json" -Headers $Header
+            $Agents = $result.value
+
+            if (-not $Agents)
+            {
+                Write-Output "There are no Agents in this Agent Pool"
+            }
+            else
+            {
+                Write-Output "The following agents were found:"
+                foreach ($Agent in $Agents)
+                {
+                    $AgentName = $Agent.name
+                    $AgentStatus = $Agent.status
+                    Write-Output "$AgentName ($AgentStatus)"
+                }
+
+                # Delete Agent(s) from Pool
+                foreach ($Name in $ContainerName)
+                {
+                    Write-Output "Attempting to remove any Agent(s) that belonged to this ACI container: $Name..."
+                    foreach ($Agent in $Agents)
+                    {
+                        $AgentName = $Agent.name
+
+                        if($AgentName -match "^$Name-")
+                        {
+                            # Delete Agent
+                            $AgentIds = $Agent.id
+                            foreach ($AgentId in $AgentIds)
+                            {
+                                Write-Output "Deleting Agent ($AgentName) - (Agent ID: $AgentId)..."
+                                $uri = "https://dev.azure.com/$AzureDevOpsAccountName/_apis/distributedtask/pools/$AgentPoolId/agents/$($AgentId)?api-version=5.0"
+                                $result = Invoke-RestMethod -Uri $uri -Method DELETE -ContentType "application/json" -Headers $Header
+
+                                # Check success
+                                Write-Output "Checking if the Agent ($AgentName) - (Agent ID: $AgentId) is still there..."
+                                $uri = "https://dev.azure.com/$AzureDevOpsAccountName/_apis/distributedtask/pools/$AgentPoolId/agents?includeCapabilities=false&includeAssignedRequest=true"
+                                $result = Invoke-RestMethod -Uri $uri -Method GET -ContentType "application/json" -Headers $Header
+                                $AgentStillThere = $result.value.id -contains $AgentId
+                                if ($AgentStillThere)
+                                {
+                                    Write-Warning "Agent ($AgentName) could not be deleted. Don't forget to clean your Agent pool in Azure Devops (remove any agents that were created in a previous iteration and are now offline)!"
+                                }
+                                else
+                                {
+                                    Write-Output "Agent ($AgentName) successfully deleted."    
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
 #endregion
@@ -130,5 +227,8 @@ param(
 
     # Delete selected containers
     Remove-Container -ContainerName $ContainerName
+
+    # Delete Agent registration from Azure DevOps Agent pool
+    Remove-AzureDevOpsAgentFromPool -PatToken $PatToken -AzureDevOpsAccountName $AzureDevOpsAccountName -AgentPoolName $AgentPoolName -ContainerName $ContainerName
 
 #endregion

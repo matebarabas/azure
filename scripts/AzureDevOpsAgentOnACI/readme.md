@@ -108,7 +108,7 @@ After the successful configuration, it prints the available disk space and keeps
 
 ### 2.3. Remove-VstsAgentOnWindowsServerCoreContainer.ps1
 
-This removal script removes the selected Azure Container Instance(s). It leaves the Resource Group (and other resources within it) intact.
+This removal script removes the selected Azure Container Instance(s), and unregisters their agents from the Agent Pool. It leaves the Resource Group (and other resources within it) intact.
 
 ### 2.4. Diagram
 
@@ -179,7 +179,7 @@ Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscri
 Remove-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>", "<container n name>"
 ```
 
-- Once the containers have been removed, the agents on the Azure DevOps portal become orphaned. These have to be manually deprovisioned (deleted) on the portal.
+- Once the containers have been removed, this script also unregisters the agents from the Agent Pool on the Azure DevOps portal.
 
 ---
 
