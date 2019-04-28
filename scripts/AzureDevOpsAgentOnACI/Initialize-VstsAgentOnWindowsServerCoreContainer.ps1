@@ -186,7 +186,7 @@ param(
     [Parameter(Mandatory=$false,
                HelpMessage="Fully qualified name of the container image, optionally including tags.")]
     [ValidateNotNullOrEmpty()]
-    [string]$ContainerImage = "microsoft/windowsservercore:ltsc2016" # or "mcr.microsoft.com/windows/servercore:ltsc2016"
+    [string]$ContainerImage = "microsoft/windowsservercore:10.0.14393.2791" # or "mcr.microsoft.com/windows/servercore:ltsc2016"
 
 )
 
@@ -378,7 +378,7 @@ param(
                         # When running in Cloud Shell, login is not required (has already happened)
                         if ($null -ne $env:ACC_CLOUD)
                         {
-                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --registry-password $AcrPassword --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --registry-password $AcrPassword --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName --output none
                         }
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
@@ -409,7 +409,7 @@ param(
                         # When running in Cloud Shell, login is not required (has already happened)
                         if ($null -ne $env:ACC_CLOUD)
                         {
-                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName --output none
                         }
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
