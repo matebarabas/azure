@@ -108,7 +108,7 @@ param (
             Start-Sleep -Seconds 10
         }
 
-        Write-Output "PowerShell modules to install: $RequiredModules"
+        Write-Output "PowerShell modules to install: $($RequiredModules -join ", ")"
         
         foreach ($Module in $RequiredModules)
         {
