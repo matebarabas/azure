@@ -123,12 +123,12 @@ param (
                 
                 Install-Module -Name $Module -Force -Confirm:$false -SkipPublisherCheck
             }
-
-            if (Get-Module Az.Accounts -ErrorAction SilentlyContinue)
-            {
-                Write-Output "Enabling AzureRm compatibility mode"
-                Enable-AzureRmAlias -Scope LocalMachine
-            }
+        }
+        Start-Sleep -Seconds 5 | Out-Null
+        if (Get-Module Az.Accounts -ErrorAction SilentlyContinue)
+        {
+            Write-Output "Enabling AzureRm compatibility mode"
+            Enable-AzureRmAlias -Scope LocalMachine
         }
 
     }
@@ -239,13 +239,12 @@ param (
         Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
         if (Test-Path $AzureCliInstallerFullPath)
         {
-            Write-Output "Azure CLI installer ($AzureCliInstallerFileName)"
             Write-Output "Installing Azure CLI ($AzureCliInstallerFileName)"
             Start-Process msiexec.exe -Wait -ArgumentList "/i $AzureCliInstallerFullPath /quiet /passive /qn"
             $AzureCli = (Get-WmiObject -Class win32_product) | Where-Object {$_.name -like "*Microsoft Azure CLI*"}
             if ($AzureCli)
             {
-                Write-Output "Azure CLI (version $($AzureCli.Version) was successfully installed)"
+                Write-Output "Azure CLI (version $($AzureCli.Version)) was successfully installed"
                 Remove-Item -Path $AzureCliInstallerFullPath -Force -Confirm:$false
             }
             else
@@ -266,7 +265,6 @@ param (
         Invoke-WebRequest -UseBasicParsing -Uri $PwshInstallerUrl -OutFile $PwshInstallerFullPath
         if (Test-Path $PwshInstallerFullPath)
         {
-            Write-Output "PowerShell Core installer ($PwshInstallerFileName)"
             Write-Output "Installing PowerShell Core ($PwshInstallerFileName)"
             Start-Process msiexec.exe -Wait -ArgumentList "/i $PwshInstallerFullPath /quiet /passive /qn"
 
