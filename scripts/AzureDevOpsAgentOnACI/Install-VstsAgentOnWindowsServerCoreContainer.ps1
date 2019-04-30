@@ -233,7 +233,7 @@ param (
         Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
         if (Test-Path $AzureCliInstallerFullPath)
         {
-            Write-Output "Azure CLI installer ($AzureCliInstallerFileName) was successfully downloaded as $AzureCliInstallerFullPath"
+            Write-Output "Azure CLI installer ($AzureCliInstallerFileName)"
             Write-Output "Installing Azure CLI ($AzureCliInstallerFileName)"
             Start-Process msiexec.exe -Wait -ArgumentList "/i $AzureCliInstallerFullPath /quiet /passive /qn"
             $AzureCli = (Get-WmiObject -Class win32_product) | Where-Object {$_.name -like "*Microsoft Azure CLI*"}
@@ -260,7 +260,7 @@ param (
         Invoke-WebRequest -UseBasicParsing -Uri $PwshInstallerUrl -OutFile $PwshInstallerFullPath
         if (Test-Path $PwshInstallerFullPath)
         {
-            Write-Output "PowerShell Core installer ($PwshInstallerFileName) was successfully downloaded as $PwshInstallerFullPath"
+            Write-Output "PowerShell Core installer ($PwshInstallerFileName)"
             Write-Output "Installing PowerShell Core ($PwshInstallerFileName)"
             Start-Process msiexec.exe -Wait -ArgumentList "/i $PwshInstallerFullPath /quiet /passive /qn"
 
