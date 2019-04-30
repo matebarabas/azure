@@ -123,6 +123,12 @@ param (
                 
                 Install-Module -Name $Module -Force -Confirm:$false -SkipPublisherCheck
             }
+
+            if (Get-Module Az.Accounts -ErrorAction SilentlyContinue)
+            {
+                Write-Output "Enabling AzureRm compatibility mode"
+                Enable-AzureRmAlias -Scope LocalMachine
+            }
         }
 
     }

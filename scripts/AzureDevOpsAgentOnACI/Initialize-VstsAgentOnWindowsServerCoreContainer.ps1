@@ -186,7 +186,7 @@ param(
     [Parameter(Mandatory=$false,
                HelpMessage="Fully qualified name of the container image, optionally including tags.")]
     [ValidateNotNullOrEmpty()]
-    [string]$ContainerImage # e.g. "microsoft/windowsservercore:10.0.14393.2791" or "mcr.microsoft.com/windows/servercore:ltsc2016"
+    [string]$ContainerImage # e.g. "microsoft/dotnet-framework:4.7.2-runtime-20190212-windowsservercore-ltsc2016" or "microsoft/windowsservercore:10.0.14393.2791" or "mcr.microsoft.com/windows/servercore:ltsc2016"
 
 )
 
@@ -359,7 +359,7 @@ param(
             {
                 $CreateAtLeastOneContainer = $true
                 Write-Output "Creating ACI container ($Name) with the image of $ContainerImage..."
-                Write-Output "Instantiating a container can take a few minutes, depending on the image size and whether or not the container image is cached in the ACI platfrom."
+                Write-Output "Instantiating a container can take a few minutes, depending on the image size and whether or not the container image is cached in the ACI platform."
 
                 if ($RequiredPowerShellModules.Count -gt 1)
                 {
@@ -524,7 +524,7 @@ param(
 
         $result = Invoke-RestMethod @RestCall
 
-        $LatestCachedImage = (($result.value | Where-Object {$_.image -match "microsoft/windowsservercore"} | Sort-Object image)[-1]).image
+        $LatestCachedImage = (($result.value | Where-Object {$_.image -like "microsoft/*dotnet*windowsservercore*"} | Sort-Object image)[-1]).image
         return $LatestCachedImage
     }
 #endregion
