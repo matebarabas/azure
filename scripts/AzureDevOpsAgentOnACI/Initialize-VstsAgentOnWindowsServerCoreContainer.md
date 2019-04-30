@@ -43,6 +43,9 @@ Prerequisites:
 - `RequiredPowerShellModules`: List of the required PowerShell modules, e.g. Az, AzureAD, Pester
 - `ContainerImage`: Fully qualified name of the container image, optionally including tags.
 - `AcrPassword`: Access password to the Azure Container Registry (ACR).
+- `InstallAzureCli`: Switch to define whether or not you want to install the Azure CLI on your container.
+- `InstallPowerShellCore`: Switch to define whether or not you want to install Azure PowerShell Core on your container.
+
 
 ## EXAMPLE
 

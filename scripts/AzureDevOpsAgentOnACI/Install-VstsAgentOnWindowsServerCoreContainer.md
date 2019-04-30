@@ -17,6 +17,8 @@ After the successful configuration, it prints the available disk space and keeps
 - `AgentNamePrefix`: Prefix of the name of the agent shown on the Azure DevOps (VSTS) portal.
 - `PoolName`: Name of the Agent pool. It defaults to the "Default" pool when not defined.
 - `RequiredPowerShellModules`: List of the required PowerShell modules, e.g. Az, AzureAD, Pester
+- `InstallAzureCli`: Switch to define whether or not you want to install the Azure CLI on your container.
+- `InstallPowerShellCore`: Switch to define whether or not you want to install Azure PowerShell Core on your container.
 
 ## EXAMPLES
 

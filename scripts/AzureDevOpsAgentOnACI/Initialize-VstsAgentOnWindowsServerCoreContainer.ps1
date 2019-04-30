@@ -72,6 +72,10 @@
     Fully qualified name of the container image, optionally including tags.
 .PARAMETER AcrPassword
     Access password to the Azure Container Registry (ACR)
+.PARAMETER InstallAzureCli
+    Switch to define whether or not you want to install the Azure CLI on your container.
+.PARAMETER InstallPowerShellCore
+    Switch to define whether or not you want to install Azure PowerShell Core on your container.
 .EXAMPLE
     .\Initialize-VstsAgentOnWindowsServerCoreContainer.ps1 -SubscriptionName "<subscription name>" -ResourceGroupName "<resource group name>" -ContainerName "<container 1 name>", "<container 2 name>" -Location "<azure region>" -StorageAccountName "<storage account name>" -VSTSAccountName "<azure devops account name>" -PATToken "<PAT token>"
     This uploads the container configuration script to the default "publicvstsscript" storage container of the requested Storage Account and then creates 2 Azure Container Instances, with the default settings (Default Agent Pool 1 GB RAM, 1 CPU core, PowerShell modules installed: "Az", "AzureAD", "Pester").
@@ -186,7 +190,17 @@ param(
     [Parameter(Mandatory=$false,
                HelpMessage="Fully qualified name of the container image, optionally including tags.")]
     [ValidateNotNullOrEmpty()]
-    [string]$ContainerImage # e.g. "microsoft/dotnet-framework:4.7.2-runtime-20190212-windowsservercore-ltsc2016" or "microsoft/windowsservercore:10.0.14393.2791" or "mcr.microsoft.com/windows/servercore:ltsc2016"
+    [string]$ContainerImage, # e.g. "microsoft/dotnet-framework:4.7.2-runtime-20190212-windowsservercore-ltsc2016" or "microsoft/windowsservercore:10.0.14393.2791" or "mcr.microsoft.com/windows/servercore:ltsc2016"
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Switch to define whether or not you want to install the Azure CLI on your container.")]
+    [ValidateNotNullOrEmpty()]
+    [switch]$InstallAzureCli,
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Switch to define whether or not you want to install Azure PowerShell Core on your container.")]
+    [ValidateNotNullOrEmpty()]
+    [switch]$InstallPowerShellCore
 
 )
 
@@ -366,6 +380,24 @@ param(
                     $RequiredPowerShellModules = $RequiredPowerShellModules -join ","
                 }
 
+                # Convert input switches to booleans
+                if ($InstallAzureCli.IsPresent)
+                {
+                    $InstallAzureCli = $true
+                }
+                else 
+                {
+                    $InstallAzureCli = $false
+                }
+                if ($InstallPowerShellCore.IsPresent)
+                {
+                    $InstallPowerShellCore = $true
+                }
+                else 
+                {
+                    $InstallPowerShellCore = $false
+                }
+
                 if ($AcrPassword)
                 {
                     $SecPasswd = ConvertTo-SecureString $AcrPassword -AsPlainText -Force
@@ -378,7 +410,7 @@ param(
                         # When running in Cloud Shell, login is not required (has already happened)
                         if ($null -ne $env:ACC_CLOUD)
                         {
-                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --registry-password $AcrPassword --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName --output none
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --registry-password $AcrPassword --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules -InstallPowerShellCore $InstallPowerShellCore -InstallAzureCli $InstallAzureCli" --subscription $SubscriptionName --output none
                         }
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
@@ -393,7 +425,7 @@ param(
                                                 -MemoryInGB $MemoryInGB `
                                                 -RestartPolicy Always `
                                                 -RegistryCredential $MyCred `
-                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
+                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules -InstallPowerShellCore $InstallPowerShellCore -InstallAzureCli $InstallAzureCli" | Out-null
                     }
                     else 
                     {
@@ -409,7 +441,7 @@ param(
                         # When running in Cloud Shell, login is not required (has already happened)
                         if ($null -ne $env:ACC_CLOUD)
                         {
-                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" --subscription $SubscriptionName --output none
+                            az container create --resource-group $ResourceGroupName --name $Name --image $ContainerImage --location $Location --os-type Windows --cpu $Cpu --memory $MemoryInGB --restart-policy Always --command-line "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules -InstallPowerShellCore $InstallPowerShellCore -InstallAzureCli $InstallAzureCli" --subscription $SubscriptionName --output none
                         }
                     }
                     elseif ($PSVersionTable.PSEdition -eq "Desktop")
@@ -423,7 +455,7 @@ param(
                                                 -Cpu $Cpu `
                                                 -MemoryInGB $MemoryInGB `
                                                 -RestartPolicy Always `
-                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules" | Out-null
+                                                -Command "powershell Start-Sleep -Seconds 20; Invoke-WebRequest -Uri $ScriptURL -OutFile $ScriptFileName -UseBasicParsing; & .\$ScriptFileName -VSTSAccountName $VSTSAccountName -PATToken $PATToken -AgentNamePrefix $Name -PoolName $PoolName -RequiredPowerShellModules $RequiredPowerShellModules -InstallPowerShellCore $InstallPowerShellCore -InstallAzureCli $InstallAzureCli" | Out-null
                     }
                     else 
                     {

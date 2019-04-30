@@ -32,6 +32,10 @@
     Name of the Agent pool. It defaults to the "Default" pool when not defined.
 .PARAMETER RequiredPowerShellModules
     List of the required PowerShell modules, e.g. Az, AzureAD, Pester
+.PARAMETER InstallAzureCli
+    Switch to define whether or not you want to install the Azure CLI on your container.
+.PARAMETER InstallPowerShellCore
+    Switch to define whether or not you want to install Azure PowerShell Core on your container.
 .EXAMPLE
     .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>"
     This installs all the components with the default configuration (Default Agent Pool, "Az", "AzureAD", "Pester" PowerShell modules, randomly generated agent name).
@@ -77,7 +81,17 @@ param (
     [Parameter(Mandatory=$false,
                HelpMessage="List of the required PowerShell modules, e.g. Az, AzureAD, Pester")]
     [ValidateNotNullOrEmpty()]
-    [array]$RequiredPowerShellModules=@("Az", "AzureAD", "Pester")
+    [array]$RequiredPowerShellModules=@("Az", "AzureAD", "Pester"),
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Switch to define whether or not you want to install the Azure CLI on your container.")]
+    [ValidateNotNullOrEmpty()]
+    [switch]$InstallAzureCli,
+
+    [Parameter(Mandatory=$false,
+               HelpMessage="Switch to define whether or not you want to install Azure PowerShell Core on your container.")]
+    [ValidateNotNullOrEmpty()]
+    [switch]$InstallPowerShellCore
 
 )
 
@@ -127,7 +141,7 @@ param (
         if (Get-Module -ListAvailable | Where-Object {$_.Name -eq "Az.Accounts"})
         {
             Write-Output "Enabling AzureRm compatibility mode"
-            Enable-AzureRmAlias -Scope LocalMachine
+            Enable-AzureRmAlias -Scope LocalMachine -PassThru -Confirm:$false
         }
 
     }
@@ -737,41 +751,52 @@ param (
     [Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls" # Original: Ssl3, Tls
 
     # Install Terraform
+    $TerraformInstallStart = Get-Date
     Install-Terraform
     $TerraformInstallEnd = Get-Date
-    $TerraformInstallDuration = New-TimeSpan -Start $StartDate -End $TerraformInstallEnd
+    $TerraformInstallDuration = New-TimeSpan -Start $TerraformInstallStart -End $TerraformInstallEnd
     Write-Host "Terraform installation took $($TerraformInstallDuration.Hours.ToString("00")):$($TerraformInstallDuration.Minutes.ToString("00")):$($TerraformInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Json2HCL
+    $Json2HclInstallStart = Get-Date
     Install-Json2Hcl
     $Json2HclInstallEnd = Get-Date
-    $Json2HclInstallDuration = New-TimeSpan -Start $TerraformInstallEnd -End $Json2HclInstallEnd
+    $Json2HclInstallDuration = New-TimeSpan -Start $Json2HclInstallStart -End $Json2HclInstallEnd
     Write-Host "Json2HCL installation took $($Json2HclInstallDuration.Hours.ToString("00")):$($Json2HclInstallDuration.Minutes.ToString("00")):$($Json2HclInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Powershell Modules
+    $PoShModuleInstallStart = Get-Date
     Install-PowerShellModules -RequiredModules $RequiredPowerShellModules
     $PoShModuleInstallEnd = Get-Date
-    $PoShModuleInstallDuration = New-TimeSpan -Start $Json2HclInstallEnd -End $PoShModuleInstallEnd
+    $PoShModuleInstallDuration = New-TimeSpan -Start $PoShModuleInstallStart -End $PoShModuleInstallEnd
     Write-Host "PowerShell module installation took $($PoShModuleInstallDuration.Hours.ToString("00")):$($PoShModuleInstallDuration.Minutes.ToString("00")):$($PoShModuleInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Install Azure CLI
-    Install-AzureCli
-    $AzureCliInstallEnd = Get-Date
-    $AzureCliInstallDuration = New-TimeSpan -Start $PoShModuleInstallEnd -End $AzureCliInstallEnd
-    Write-Output "Azure CLI installation took $($AzureCliInstallDuration.Hours.ToString("00")):$($AzureCliInstallDuration.Minutes.ToString("00")):$($AzureCliInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+    $AzureCliInstallStart = Get-Date
+    if ($InstallAzureCli.IsPresent)
+    {
+        Install-AzureCli
+        $AzureCliInstallEnd = Get-Date
+        $AzureCliInstallDuration = New-TimeSpan -Start $AzureCliInstallStart -End $AzureCliInstallEnd
+        Write-Output "Azure CLI installation took $($AzureCliInstallDuration.Hours.ToString("00")):$($AzureCliInstallDuration.Minutes.ToString("00")):$($AzureCliInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+    }
 
     # Install PowerShell Core
-    Install-PowerShellCore
-    $PoShCoreInstallEnd = Get-Date
-    $PoShCoreInstallDuration = New-TimeSpan -Start $AzureCliInstallEnd -End $PoShCoreInstallEnd
-    Write-Output "PowerShell Core installation took $($PoShCoreInstallDuration.Hours.ToString("00")):$($PoShCoreInstallDuration.Minutes.ToString("00")):$($PoShCoreInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
-    
+    $PoShCoreInstallStart = Get-Date
+    if ($InstallPowerShellCore)
+    {
+        Install-PowerShellCore
+        $PoShCoreInstallEnd = Get-Date
+        $PoShCoreInstallDuration = New-TimeSpan -Start $PoShCoreInstallStart -End $PoShCoreInstallEnd
+        Write-Output "PowerShell Core installation took $($PoShCoreInstallDuration.Hours.ToString("00")):$($PoShCoreInstallDuration.Minutes.ToString("00")):$($PoShCoreInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+    }
+
     # Install VSTS Agent
-    $Date = Get-Date -Format yyyyMMdd-HHmmss
-    $AgentName = "$AgentNamePrefix-$Date"
+    $AgentInstallStart = Get-Date -Format yyyyMMdd-HHmmss
+    $AgentName = "$AgentNamePrefix-$AgentInstallStart"
     Install-VstsAgent -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false
     $AgentInstallEnd = Get-Date
-    $AgentInstallDuration = New-TimeSpan -Start $PoShCoreInstallEnd -End $AgentInstallEnd
+    $AgentInstallDuration = New-TimeSpan -Start $AgentInstallStart -End $AgentInstallEnd
     Write-Host "Agent installation took $($AgentInstallDuration.Hours.ToString("00")):$($AgentInstallDuration.Minutes.ToString("00")):$($AgentInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
     # Get available Volume size, RAM
