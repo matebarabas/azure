@@ -5,36 +5,13 @@
 ###########################################################################################################
 # PROVIDERS
 ###########################################################################################################
-provider "azurerm" {
-  version         = "~>1.27"
-  subscription_id = "${var.subscription_id}"
-  client_id       = "${var.client_id}"
-  client_secret   = "${var.client_secret}"
-  tenant_id       = "${var.tenant_id}"
-}
+
+# Azure Resource Manager Provider
+provider "azurerm" {}
 
 ###########################################################################################################
 # VARIABLES
 ###########################################################################################################
-# ID of the Azure Subscription this configuration is targeted against (e.g. 6a0a87c2-426f-b854-aab8-21041f09f06b)
-variable "subscription_id" {
-  default = ""
-}
-
-# ID of the Service principal used to access the target Azure Subscription (e.g. 23e5a3bf-426f-b854-aab8-21041f09f06b)
-variable "client_id" {
-  default = ""
-}
-
-# Secret value of the Service principal used to access tthe target Azure Subscription(e.g. 9c0a87c2-426f-b854-aab8-21041f09f06b)
-variable "client_secret" {
-  default = ""
-}
-
-# ID of the Azure AD tenant used for authenticating to the target Azure Subscription (e.g. 6a0a87c2-426f-b854-aab8-21041f09f06b)
-variable "tenant_id" {
-  default = ""
-}
 
 # Naming prefix
 variable "prefix" {
