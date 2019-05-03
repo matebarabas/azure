@@ -147,6 +147,17 @@ function Install-PowerShellModules
 
 }
 
+function Install-Choco
+{
+    Invoke-WebRequest  -Uri "https://chocolatey.org/install.ps1" -OutFile "c:\chochoinstall.ps1"
+    .\chocoinstall.ps1
+}
+
+function Install-ChocoTerraform
+{
+    choco install terraform -y
+}
+
 function Install-Terraform
 {
 
@@ -243,14 +254,10 @@ function Install-Json2Hcl
     # Set the New PATH environmental Variable
     Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $NewPath
     $env:Path += $NewPath
-    https://github.com/kvz/json2hcl/releases/download/v0.0.6/json2hcl_v0.0.6_windows_amd64.exe
+    
 }
 
-function Install-Choco
-{
-    Invoke-WebRequest  -Uri "https://chocolatey.org/install.ps1" -OutFile "c:\chochoinstall.ps1"
-    .\chocoinstall.ps1
-}
+
 
 function Install-AzureCli
 {
@@ -261,8 +268,8 @@ function Install-AzureCli
     $AzureCliInstallerFileName = $response.BaseResponse.ResponseUri.AbsolutePath.Split("/")[-1]
 
     Write-Output "Downloading Azure CLI installer ($AzureCliInstallerFileName)"
-    Start-BitsTransfer -Source $AzureCliUrl -Destination $AzureCliInstallerFullPath
-    #Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile($AzureCliUrl, $AzureCliInstallerFullPath)
     
     if (Test-Path $AzureCliInstallerFullPath)
     {
