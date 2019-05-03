@@ -542,6 +542,8 @@ function Get-LatestCachedImageVersion
 {
     # This function returns the name of the latest version of the 
     # microsoft/windowsservercore image that is cached in the ACI platform
+    # This is needed, because Microsoft no longer uses the ":latest" tag on their images 
+    # See more details here: https://techcommunity.microsoft.com/t5/Containers/Removing-the-latest-Tag-An-Update-on-MCR/ba-p/393045
 
     # Authenticate to invoke Azure REST API
     $azProfile = [Microsoft.Azure.Commands.Common.Authentication.Abstractions.AzureRmProfileProvider]::Instance.Profile

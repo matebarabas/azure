@@ -190,7 +190,7 @@ function Install-Terraform
 
     # Download and extract Terraform, remove the temporary zip file
     Write-Output "Downloading Terraform ($Version) to $FolderPath..."
-    Invoke-WebRequest -Uri $URL -OutFile $FilePath -UseBasicParsing
+    Start-BitsTransfer -Source $URL -Destination $FilePath
     Expand-Archive -LiteralPath $FilePath -DestinationPath $FolderPath
     Remove-Item -Path $FilePath
 
@@ -230,10 +230,11 @@ function Install-Json2Hcl
 
     # Download and extract Json2HCL
     Write-Output "Downloading Json2HCL ($Version) to $FolderPath..."
-    Invoke-WebRequest -Uri $URL -OutFile $FilePath -UseBasicParsing
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile($URL, $FilePath)
     Rename-Item -Path $FolderPath\$FileName -NewName "json2hcl.exe"
 
-    # Setting PATH environmental variable for Terraform
+    # Setting PATH environmental variable
     Write-Output "Setting PATH environmental variable for Json2HCL..."
     # Get the PATH environmental Variable
     $Path = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).Path
@@ -242,7 +243,13 @@ function Install-Json2Hcl
     # Set the New PATH environmental Variable
     Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $NewPath
     $env:Path += $NewPath
+    https://github.com/kvz/json2hcl/releases/download/v0.0.6/json2hcl_v0.0.6_windows_amd64.exe
+}
 
+function Install-Choco
+{
+    Invoke-WebRequest  -Uri "https://chocolatey.org/install.ps1" -OutFile "c:\chochoinstall.ps1"
+    .\chocoinstall.ps1
 }
 
 function Install-AzureCli
@@ -252,8 +259,11 @@ function Install-AzureCli
     $AzureCliInstallerFullPath = "C:\azurecli.msi"
     $response = Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method Head
     $AzureCliInstallerFileName = $response.BaseResponse.ResponseUri.AbsolutePath.Split("/")[-1]
+
     Write-Output "Downloading Azure CLI installer ($AzureCliInstallerFileName)"
-    Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
+    Start-BitsTransfer -Source $AzureCliUrl -Destination $AzureCliInstallerFullPath
+    #Invoke-WebRequest -UseBasicParsing -Uri $AzureCliUrl -Method GET -OutFile $AzureCliInstallerFullPath
+    
     if (Test-Path $AzureCliInstallerFullPath)
     {
         Write-Output "Installing Azure CLI ($AzureCliInstallerFileName)"
@@ -263,6 +273,16 @@ function Install-AzureCli
         {
             Write-Output "Azure CLI (version $($AzureCli.Version)) was successfully installed"
             Remove-Item -Path $AzureCliInstallerFullPath -Force -Confirm:$false
+
+            # Setting PATH environmental variable
+            Write-Output "Setting PATH environmental variable for Azure CLI..."
+            # Get the PATH environmental Variable
+            $Path = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).Path
+            # Create New PATH environmental Variable
+            $NewPath = $Path + ";" + "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+            # Set the New PATH environmental Variable
+            Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $NewPath
+            $env:Path += $NewPath
         }
         else
         {
@@ -280,17 +300,31 @@ function Install-PowerShellCore
     $PwshInstallerFileName = $PwshInstallerRelativeUrl.Split("/")[-1]
     Write-Output "Downloading PowerShell Core ($PwshInstallerFileName)"
     $PwshInstallerUrl = "https://github.com" + $PwshInstallerRelativeUrl
-    Invoke-WebRequest -UseBasicParsing -Uri $PwshInstallerUrl -OutFile $PwshInstallerFullPath
+
+    # Download PowerShell Core
+    $WebClient = New-Object System.Net.WebClient
+    $WebClient.DownloadFile($PwshInstallerUrl, $PwshInstallerFullPath)
+
     if (Test-Path $PwshInstallerFullPath)
     {
         Write-Output "Installing PowerShell Core ($PwshInstallerFileName)"
         Start-Process msiexec.exe -Wait -ArgumentList "/i $PwshInstallerFullPath /quiet /passive /qn"
-
+        
         $Pwsh = (Get-WmiObject -Class win32_product) | Where-Object { $_.name -like "*PowerShell*-x64" }
         if ($Pwsh)
         {
             Write-Output "PowerShell Core (version $($Pwsh.Version) was successfully installed)"
             Remove-Item -Path $PwshInstallerFullPath -Force -Confirm:$false
+
+            # Setting PATH environmental variable
+            Write-Output "Setting PATH environmental variable for Azure CLI..."
+            # Get the PATH environmental Variable
+            $Path = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).Path
+            # Create New PATH environmental Variable
+            $NewPath = $Path + ";" + "c:\Program Files\PowerShell\6\"
+            # Set the New PATH environmental Variable
+            Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $NewPath
+            $env:Path += $NewPath
         }
         else
         {
