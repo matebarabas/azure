@@ -496,7 +496,7 @@ function New-Container
                     if ($LogEntries)
                     {
                         # Check if the last line of the log is "Container successfully configured."
-                        $Success = $LogEntries.Split("`n")[-3] -eq "Container successfully configured." # Do NOT change this value, as the wrapper script is triggered based on this.
+                        $Success = $LogEntries.Split("`n")[-4] -eq "Container successfully configured." # Do NOT change this value, as the wrapper script is triggered based on this.
                         if ($Success)
                         {
                             $ConfiguredContainers += $Name
