@@ -45,6 +45,7 @@ Prerequisites:
 - `AcrPassword`: Access password to the Azure Container Registry (ACR).
 - `InstallAzureCli`: Switch to define whether or not you want to install the Azure CLI on your container.
 - `InstallPowerShellCore`: Switch to define whether or not you want to install Azure PowerShell Core on your container.
+- `UseChocolatey`: Switch to define whether or not Chocolatey should be used to install the supported components
 
 
 ## EXAMPLE

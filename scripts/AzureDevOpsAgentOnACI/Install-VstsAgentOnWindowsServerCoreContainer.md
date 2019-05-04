@@ -19,6 +19,7 @@ After the successful configuration, it prints the available disk space and keeps
 - `RequiredPowerShellModules`: List of the required PowerShell modules, e.g. Az, AzureAD, Pester
 - `InstallAzureCli`: Switch to define whether or not you want to install the Azure CLI on your container.
 - `InstallPowerShellCore`: Switch to define whether or not you want to install Azure PowerShell Core on your container.
+- `UseChocolatey`: Switch to define whether or not Chocolatey should be used to install the supported components
 
 ## EXAMPLES
 

@@ -36,6 +36,8 @@
     Switch to define whether or not you want to install the Azure CLI on your container.
 .PARAMETER InstallPowerShellCore
     Switch to define whether or not you want to install Azure PowerShell Core on your container.
+.PARAMETER UseChocolatey
+    Switch to define whether or not Chocolatey should be used to install the supported components
 .EXAMPLE
     .\Install-VstsAgentWindowsServerCoreContainer.ps1 -VSTSAccountName "<Azure DevOps account Name>" -PATToken "<PAT Token value>"
     This installs all the components with the default configuration (Default Agent Pool, "Az", "AzureAD", "Pester" PowerShell modules, randomly generated agent name).
@@ -91,9 +93,51 @@ param (
     [Parameter(Mandatory = $false,
         HelpMessage = "Switch to define whether or not you want to install Azure PowerShell Core on your container.")]
     [ValidateNotNullOrEmpty()]
-    [string]$InstallPowerShellCore
+    [string]$InstallPowerShellCore,
+
+    [Parameter(Mandatory = $false,
+        HelpMessage = "Switch to define whether or not Chocolatey should be used to install the supported components")]
+    [ValidateNotNullOrEmpty()]
+    [string]$UseChocolatey
 
 )
+
+#region Variable conversion (from text to boolean)
+
+$InstallAzureCli = switch ($InstallAzureCli)
+{
+    '1' { $true }
+    'true' { $true }
+    '$true' { $true }
+    '0' { $false }
+    'false' { $false }
+    '$false' { $false }
+    Default { $false }
+}
+
+$InstallPowerShellCore = switch ($InstallPowerShellCore)
+{
+    '1' { $true }
+    'true' { $true }
+    '$true' { $true }
+    '0' { $false }
+    'false' { $false }
+    '$false' { $false }
+    Default { $false }
+}
+
+$UseChocolatey = switch ($UseChocolatey)
+{
+    '1' { $true }
+    'true' { $true }
+    '$true' { $true }
+    '0' { $false }
+    'false' { $false }
+    '$false' { $false }
+    Default { $false }
+}
+
+#endregion
 
 #region Functions
 
@@ -107,6 +151,7 @@ function Install-PowerShellModules
     {
         $NewPackageProvider = Find-PackageProvider -Name "Nuget"
         $NewPackageProviderVersion = $NewPackageProvider.Version.ToString()
+        Write-Output "-----------------------------------------------------------------------------------"
         Write-Output "Installing Nuget package provider ($NewPackageProviderVersion)..."
 
         Install-PackageProvider -Name "Nuget" -Force -Confirm:$false | Out-Null
@@ -122,13 +167,14 @@ function Install-PowerShellModules
         Write-Output "Waiting 10 seconds..."
         Start-Sleep -Seconds 10
     }
-
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "PowerShell modules to install: $($RequiredModules -join ", ")"
         
     foreach ($Module in $RequiredModules)
     {
         if (-not (Get-Module $Module -ErrorAction SilentlyContinue))
         {
+            Write-Output "-----------------------------------------------------------------------------------"
             Write-Output "Getting $Module module..."
 
             $NewModule = Find-Module $Module
@@ -149,13 +195,17 @@ function Install-PowerShellModules
 
 function Install-Choco
 {
+    Write-Output "-----------------------------------------------------------------------------------"
+    Write-Output "Installing Chocolatey..."
     Invoke-WebRequest  -Uri "https://chocolatey.org/install.ps1" -OutFile "c:\chochoinstall.ps1"
-    .\chocoinstall.ps1
+    .\chochoinstall.ps1 | Out-Null
 }
 
 function Install-ChocoTerraform
 {
-    choco install terraform -y
+    Write-Output "-----------------------------------------------------------------------------------"
+    Write-Output "Installing Terraform with Chocolatey..."
+    choco install terraform -y --limit-output --no-progress
 }
 
 function Install-Terraform
@@ -200,6 +250,7 @@ function Install-Terraform
     New-Item -ItemType Directory -Path $FolderPath -ErrorAction SilentlyContinue | Out-Null
 
     # Download and extract Terraform, remove the temporary zip file
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "Downloading Terraform ($Version) to $FolderPath..."
     Start-BitsTransfer -Source $URL -Destination $FilePath
     Expand-Archive -LiteralPath $FilePath -DestinationPath $FolderPath
@@ -240,6 +291,7 @@ function Install-Json2Hcl
     New-Item -ItemType Directory -Path $FolderPath -ErrorAction SilentlyContinue | Out-Null
 
     # Download and extract Json2HCL
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "Downloading Json2HCL ($Version) to $FolderPath..."
     $WebClient = New-Object System.Net.WebClient
     $WebClient.DownloadFile($URL, $FilePath)
@@ -258,9 +310,15 @@ function Install-Json2Hcl
 }
 
 
-
+function Install-ChocoAzureCli 
+{
+    Write-Output "-----------------------------------------------------------------------------------"
+    Write-Output "Installing Azure CLI with Chocolatey..."
+    choco install azure-cli -y --limit-output --no-progress
+}
 function Install-AzureCli
 {
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "Searching for the latest version of Azure CLI"
     $AzureCliUrl = "https://aka.ms/installazurecliwindows"
     $AzureCliInstallerFullPath = "C:\azurecli.msi"
@@ -298,8 +356,15 @@ function Install-AzureCli
     }
 }
 
+function Install-ChocoPowerShellCore
+{
+    Write-Output "-----------------------------------------------------------------------------------"
+    Write-Output "Installing PowerShell Core with Chocolatey..."
+    choco install pwsh -y --limit-output --no-progress
+}
 function Install-PowerShellCore
 {
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "Searching for the latest version of PowerShell Core"
     $PwshInstallerFullPath = "c:\pwsh.msi"
     $response = Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/PowerShell/PowerShell/releases"
@@ -340,6 +405,371 @@ function Install-PowerShellCore
     }
 }
 
+function Install-ChocoVstsAgent
+{     
+    # Downloads the Visual Studio Online Build Agent, installs on the new machine, registers with the Visual
+    # Studio Online account, and adds to the specified build agent pool
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$vstsAccount,
+        [Parameter(Mandatory = $true)][string]$vstsUserPassword,
+        [Parameter(Mandatory = $true)][string]$agentName,
+        [Parameter(Mandatory = $false)][string]$agentNameSuffix,
+        [Parameter(Mandatory = $true)][string]$poolName,
+        [Parameter(Mandatory = $true)][string]$windowsLogonAccount,
+        [Parameter(Mandatory = $false)][string]$windowsLogonPassword,
+        [Parameter(Mandatory = $true)][ValidatePattern("[c-zC-Z]")][ValidateLength(1, 1)][string]$driveLetter,
+        [Parameter(Mandatory = $false)][string]$workDirectory,
+        [Parameter(Mandatory = $true)][boolean]$runAsAutoLogon
+    )
+
+    $AgentPreparationStartTime = Get-Date
+    Write-Output "-----------------------------------------------------------------------------------"
+    Write-Output "Installing Azure Devops Agent with Chocolatey..."
+    choco install azure-pipelines-agent -y --limit-output --no-progress
+
+    ###################################################################################################
+
+    # if the agentName is empty, use %COMPUTERNAME% as the value
+    if ([String]::IsNullOrWhiteSpace($agentName))
+    {
+        $agentName = $env:COMPUTERNAME
+    }
+
+    # if the agentNameSuffix has a value, add this to the end of the agent name
+    if (![String]::IsNullOrWhiteSpace($agentNameSuffix))
+    {
+        $agentName = $agentName + $agentNameSuffix
+    }
+
+    #
+    # PowerShell configurations
+    #
+
+    # NOTE: Because the $ErrorActionPreference is "Stop", this script will stop on first failure.
+    #       This is necessary to ensure we capture errors inside the try-catch-finally block.
+    $ErrorActionPreference = "Stop"
+
+    # Ensure we set the working directory to that of the script.
+    Push-Location $PSScriptRoot
+
+    # Configure strict debugging.
+    Set-PSDebug -Strict
+
+    ###################################################################################################
+
+    #
+    # Functions used in this script.
+    #
+
+    function Show-LastError
+    {
+        [CmdletBinding()]
+        param(
+        )
+
+        $message = $error[0].Exception.Message
+        if ($message)
+        {
+            Write-Host -Object "ERROR: $message" -ForegroundColor Red
+        }
+
+        # IMPORTANT NOTE: Throwing a terminating error (using $ErrorActionPreference = "Stop") still
+        # returns exit code zero from the PowerShell script when using -File. The workaround is to
+        # NOT use -File when calling this script and leverage the try-catch-finally block and return
+        # a non-zero exit code from the catch block.
+        exit -1
+    }
+
+    function Test-Parameters
+    {
+        [CmdletBinding()]
+        param(
+            [string] $VstsAccount,
+            [string] $WorkDirectory
+        )
+
+        if ($VstsAccount -match "https*://" -or $VstsAccount -match "visualstudio.com")
+        {
+            Write-Error "Azure DevOps account '$VstsAccount' should not be the URL, just the account name."
+        }
+
+        if (![string]::IsNullOrWhiteSpace($WorkDirectory) -and !(Test-ValidPath -Path $WorkDirectory))
+        {
+            Write-Error "Work directory '$WorkDirectory' is not a valid path."
+        }
+    }
+
+    function Test-ValidPath
+    {
+        param(
+            [string] $Path
+        )
+
+        $isValid = Test-Path -Path $Path -IsValid -PathType Container
+
+        try
+        {
+            [IO.Path]::GetFullPath($Path) | Out-Null
+        }
+        catch
+        {
+            $isValid = $false
+        }
+
+        return $isValid
+    }
+
+    function Test-AgentExists
+    {
+        [CmdletBinding()]
+        param(
+            [string] $InstallPath,
+            [string] $AgentName
+        )
+
+        $agentConfigFile = Join-Path $InstallPath '.agent'
+
+        if (Test-Path $agentConfigFile)
+        {
+            Write-Error "Agent $AgentName is already configured in this machine"
+        }
+    }
+
+    function New-AgentInstallPath
+    {
+        [CmdletBinding()]
+        param(
+            [string] $DriveLetter,
+            [string] $AgentName
+        )
+
+        [string] $agentInstallPath = $null
+
+        # Construct the agent folder under the specified drive.
+        $agentInstallDir = $DriveLetter + ":"
+        try
+        {
+            # Create the directory for this agent.
+            $agentInstallPath = Join-Path -Path $agentInstallDir -ChildPath $AgentName
+            New-Item -ItemType Directory -Force -Path $agentInstallPath | Out-Null
+        }
+        catch
+        {
+            $agentInstallPath = $null
+            Write-Error "Failed to create the agent directory at $installPathDir."
+        }
+
+        return $agentInstallPath
+    }
+
+    function Get-AgentInstaller
+    {
+        param(
+            [string] $InstallPath
+        )
+
+        $agentTempFolderName = "C:\agent"
+        if (!(Test-Path $InstallPath))
+        {
+            Write-Error "Agent install path doesn't exist: $InstallPath"
+        }
+        else 
+        {
+            $agentExePath = Join-Path $agentTempFolderName "config.cmd"
+            if (!(Test-Path $agentExePath))
+            {
+                Write-Error "Agent installer file not found: $agentExePath"
+            }   
+        }
+
+        return $agentExePath
+    }
+
+
+    function Set-MachineForAutologon
+    {
+        param(
+            $Config
+        )
+
+        if ([string]::IsNullOrWhiteSpace($Config.WindowsLogonPassword))
+        {
+            Write-Error "Windows logon password was not provided. Please retry by providing a valid windows logon password to enable autologon."
+        }
+
+        # Create a PS session for the user to trigger the creation of the registry entries required for autologon
+        $computerName = "localhost"
+        $password = ConvertTo-SecureString $Config.WindowsLogonPassword -AsPlainText -Force
+
+        if ($Config.WindowsLogonAccount.Split("\").Count -eq 2)
+        {
+            $domain = $Config.WindowsLogonAccount.Split("\")[0]
+            $userName = $Config.WindowsLogonAccount.Split('\')[1]
+        }
+        else
+        {
+            $domain = $Env:ComputerName
+            $userName = $Config.WindowsLogonAccount
+        }
+
+        $credentials = New-Object System.Management.Automation.PSCredential("$domain\\$userName", $password)
+        Enter-PSSession -ComputerName $computerName -Credential $credentials
+        Exit-PSSession
+
+        try
+        {
+            # Check if the HKU drive already exists
+            Get-PSDrive -PSProvider Registry -Name HKU | Out-Null
+            $canCheckRegistry = $true
+        }
+        catch [System.Management.Automation.DriveNotFoundException]
+        {
+            try
+            {
+                # Create the HKU drive
+                New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null
+                $canCheckRegistry = $true
+            }
+            catch
+            {
+                # Ignore the failure to create the drive and go ahead with trying to set the agent up
+                Write-Warning "Moving ahead with agent setup as the script failed to create HKU drive necessary for checking if the registry entry for the user's SId exists.\n$_"
+            }
+        }
+
+        # 120 seconds timeout
+        $timeout = 120
+
+        # Check if the registry key required for enabling autologon is present on the machine, if not wait for 120 seconds in case the user profile is still getting created
+        while ($timeout -ge 0 -and $canCheckRegistry)
+        {
+            $objUser = New-Object System.Security.Principal.NTAccount($Config.WindowsLogonAccount)
+            $securityId = $objUser.Translate([System.Security.Principal.SecurityIdentifier])
+            $securityId = $securityId.Value
+
+            if (Test-Path "HKU:\\$securityId")
+            {
+                if (!(Test-Path "HKU:\\$securityId\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"))
+                {
+                    New-Item -Path "HKU:\\$securityId\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run" -Force
+                    Write-Host "Created the registry entry path required to enable autologon."
+                }
+
+                break
+            }
+            else
+            {
+                $timeout -= 10
+                Start-Sleep(10)
+            }
+        }
+
+        if ($timeout -lt 0)
+        {
+            Write-Warning "Failed to find the registry entry for the SId of the user, this is required to enable autologon. Trying to start the agent anyway."
+        }
+    }
+
+    function Install-Agent
+    {
+        param(
+            $Config
+        )
+
+        try
+        {
+            # Set the current directory to the agent dedicated one previously created.
+            Push-Location -Path $Config.AgentInstallPath
+
+            if ($Config.RunAsAutoLogon)
+            {
+                Set-MachineForAutologon -Config $Config
+
+                # Arguements to run agent with autologon enabled
+                $agentConfigArgs = "--unattended", "--url", $Config.ServerUrl, "--auth", "PAT", "--token", $Config.VstsUserPassword, "--pool", $Config.PoolName, "--agent", $Config.AgentName, "--runAsAutoLogon", "--overwriteAutoLogon", "--windowslogonaccount", $Config.WindowsLogonAccount
+            }
+            else
+            {
+                # Arguements to run agent as a service
+                $agentConfigArgs = "--unattended", "--url", $Config.ServerUrl, "--auth", "PAT", "--token", $Config.VstsUserPassword, "--pool", $Config.PoolName, "--agent", $Config.AgentName, "--runasservice", "--windowslogonaccount", $Config.WindowsLogonAccount
+            }
+
+            if (-not [string]::IsNullOrWhiteSpace($Config.WindowsLogonPassword))
+            {
+                $agentConfigArgs += "--windowslogonpassword", $Config.WindowsLogonPassword
+            }
+            if (-not [string]::IsNullOrWhiteSpace($Config.WorkDirectory))
+            {
+                $agentConfigArgs += "--work", $Config.WorkDirectory
+            }
+            & $Config.AgentExePath $agentConfigArgs
+            if ($LASTEXITCODE -ne 0)
+            {
+                Write-Error "Agent configuration failed with exit code: $LASTEXITCODE"
+            }
+        }
+        finally
+        {
+            Pop-Location
+        }
+    }
+
+    ###################################################################################################
+    #
+    # Handle all errors in this script.
+    #
+    trap
+    {
+        # NOTE: This trap will handle all errors. There should be no need to use a catch below in this
+        #       script, unless you want to ignore a specific error.
+        Show-LastError
+    }
+
+    ###################################################################################################
+    #
+    # Main execution block.
+    #
+    try
+    {
+        Write-Host 'Validating agent parameters'
+        Test-Parameters -VstsAccount $vstsAccount -WorkDirectory $workDirectory
+
+        Write-Host 'Preparing agent installation location'
+        $agentInstallPath = New-AgentInstallPath -DriveLetter $driveLetter -AgentName $agentName
+
+        Write-Host 'Checking for previously configured agent'
+        Test-AgentExists -InstallPath $agentInstallPath -AgentName $agentName
+
+        Write-Host "Getting agent installer path $agentInstallPath"
+        $agentExePath = Get-AgentInstaller -InstallPath $agentInstallPath
+
+        # Call the agent with the configure command and all the options (this creates the settings file)
+        # without prompting the user or blocking the cmd execution.
+        Write-Host 'Installing agent'
+        $config = @{
+            AgentExePath         = $agentExePath
+            AgentInstallPath     = $agentInstallPath
+            AgentName            = $agentName
+            PoolName             = $poolName
+            ServerUrl            = "https://$VstsAccount.visualstudio.com"
+            VstsUserPassword     = $vstsUserPassword
+            RunAsAutoLogon       = $runAsAutoLogon
+            WindowsLogonAccount  = $windowsLogonAccount
+            WindowsLogonPassword = $windowsLogonPassword
+            WorkDirectory        = $workDirectory
+        }
+        Install-Agent -Config $config
+        Write-Host 'Done'
+    }
+    finally
+    {
+        Pop-Location
+    }
+
+}
+
+
 function Install-VstsAgent
 {
     # Downloads the Visual Studio Online Build Agent, installs on the new machine, registers with the Visual
@@ -358,6 +788,7 @@ function Install-VstsAgent
         [Parameter(Mandatory = $true)][boolean]$runAsAutoLogon
     )
 
+    Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "Installing VSTS Agent..."
 
     ###################################################################################################
@@ -799,9 +1230,26 @@ Write-Host "Configuration started at $StartDate"
 # Set SSL version preference
 [Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls" # Original: Ssl3, Tls
 
+# Install Chocolatey
+$ChocoInstallStart = Get-Date
+if ($UseChocolatey -eq $true)
+{
+    Install-Choco
+    $ChocoInstallEnd = Get-Date
+    $ChocoInstallDuration = New-TimeSpan -Start $ChocoInstallStart -End $ChocoInstallEnd
+    Write-Host "Chocolatey installation took $($ChocoInstallDuration.Hours.ToString("00")):$($ChocoInstallDuration.Minutes.ToString("00")):$($ChocoInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+}
+
 # Install Terraform
 $TerraformInstallStart = Get-Date
-Install-Terraform
+if ($UseChocolatey -eq $true)
+{
+    Install-ChocoTerraform
+}
+else
+{
+    Install-Terraform    
+}
 $TerraformInstallEnd = Get-Date
 $TerraformInstallDuration = New-TimeSpan -Start $TerraformInstallStart -End $TerraformInstallEnd
 Write-Host "Terraform installation took $($TerraformInstallDuration.Hours.ToString("00")):$($TerraformInstallDuration.Minutes.ToString("00")):$($TerraformInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
@@ -822,17 +1270,16 @@ Write-Host "PowerShell module installation took $($PoShModuleInstallDuration.Hou
 
 # Install Azure CLI
 $AzureCliInstallStart = Get-Date
-$InstallAzureCli = switch ($InstallAzureCli)
+if ($InstallAzureCli -eq $true) 
 {
-    '1' { $true }
-    'true' { $true }
-    '0' { $false }
-    'false' { $false }
-    Default { $false }
-}
-if ($InstallAzureCli -eq $true)
-{
-    Install-AzureCli
+    if ($UseChocolatey -eq $true)
+    {
+        Install-ChocoAzureCli
+    }
+    else
+    {
+        Install-AzureCli    
+    }
     $AzureCliInstallEnd = Get-Date
     $AzureCliInstallDuration = New-TimeSpan -Start $AzureCliInstallStart -End $AzureCliInstallEnd
     Write-Output "Azure CLI installation took $($AzureCliInstallDuration.Hours.ToString("00")):$($AzureCliInstallDuration.Minutes.ToString("00")):$($AzureCliInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
@@ -840,17 +1287,17 @@ if ($InstallAzureCli -eq $true)
 
 # Install PowerShell Core
 $PoShCoreInstallStart = Get-Date
-$InstallPowerShellCore = switch ($InstallPowerShellCore)
-{
-    '1' { $true }
-    'true' { $true }
-    '0' { $false }
-    'false' { $false }
-    Default { $false }
-}
+
 if ($InstallPowerShellCore -eq $true)
 {
-    Install-PowerShellCore
+    if ($UseChocolatey -eq $true)
+    {
+        Install-ChocoPowerShellCore
+    }
+    else
+    {
+        Install-PowerShellCore    
+    }
     $PoShCoreInstallEnd = Get-Date
     $PoShCoreInstallDuration = New-TimeSpan -Start $PoShCoreInstallStart -End $PoShCoreInstallEnd
     Write-Output "PowerShell Core installation took $($PoShCoreInstallDuration.Hours.ToString("00")):$($PoShCoreInstallDuration.Minutes.ToString("00")):$($PoShCoreInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
@@ -859,7 +1306,15 @@ if ($InstallPowerShellCore -eq $true)
 # Install VSTS Agent
 $AgentInstallStart = Get-Date
 $AgentName = "$AgentNamePrefix-$(Get-Date -Format yyyyMMdd-HHmmss)"
-Install-VstsAgent -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false
+if ($UseChocolatey -eq $true)
+{
+    Install-ChocoVstsAgent  -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false    
+}
+else
+{
+    Install-VstsAgent -vstsAccount $VSTSAccountName -vstsUserPassword $PATToken  -agentName $AgentName -poolName $PoolName -windowsLogonAccount "NT AUTHORITY\NetworkService" -driveLetter "C" -runAsAutoLogon:$false    
+}
+
 $AgentInstallEnd = Get-Date
 $AgentInstallDuration = New-TimeSpan -Start $AgentInstallStart -End $AgentInstallEnd
 Write-Host "Agent installation took $($AgentInstallDuration.Hours.ToString("00")):$($AgentInstallDuration.Minutes.ToString("00")):$($AgentInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
@@ -869,11 +1324,13 @@ Get-SystemData
 
 # Calculate duration
 $OverallDuration = New-TimeSpan -Start $StartDate -End (Get-Date)
+Write-Output "-----------------------------------------------------------------------------------"
 Write-Host "It took $($OverallDuration.Hours.ToString("00")):$($OverallDuration.Minutes.ToString("00")):$($OverallDuration.Seconds.ToString("00")) (HH:mm:ss) to install the required components."
 Write-Host "Installation finished at $(Get-Date)"
 Write-Host "Container successfully configured." # Do NOT change this text, as this is the success criteria for the wrapper script.
 
 # Keep the container running by checking if the VSTS service is up
+Write-Output "-----------------------------------------------------------------------------------"
 Watch-VstsAgentService
 
 #endregion
