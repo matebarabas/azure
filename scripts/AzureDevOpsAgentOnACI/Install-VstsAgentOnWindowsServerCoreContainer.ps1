@@ -141,19 +141,14 @@ $UseChocolatey = switch ($UseChocolatey)
 
 #region Functions
 
-function Install-PowerShellModules
+function Install-Nuget
 {
-    param (
-        [array]$RequiredModules
-    )
-
     if (-not (Get-PackageProvider -Name "Nuget" -ListAvailable -ErrorAction SilentlyContinue))
     {
+        Write-Output "-----------------------------------------------------------------------------------"
         $NewPackageProvider = Find-PackageProvider -Name "Nuget"
         $NewPackageProviderVersion = $NewPackageProvider.Version.ToString()
-        Write-Output "-----------------------------------------------------------------------------------"
         Write-Output "Installing Nuget package provider ($NewPackageProviderVersion)..."
-
         Install-PackageProvider -Name "Nuget" -Force -Confirm:$false | Out-Null
 
         if (Get-PackageProvider "Nuget")
@@ -167,6 +162,14 @@ function Install-PowerShellModules
         Write-Output "Waiting 10 seconds..."
         Start-Sleep -Seconds 10
     }
+}
+
+function Install-PowerShellModules
+{
+    param (
+        [array]$RequiredModules
+    )
+
     Write-Output "-----------------------------------------------------------------------------------"
     Write-Output "PowerShell modules to install: $($RequiredModules -join ", ")"
         
@@ -1225,6 +1228,7 @@ function Watch-VstsAgentService
 
 # Record start time
 $StartDate = Get-Date
+Write-Output "-----------------------------------------------------------------------------------"
 Write-Host "Configuration started at $StartDate"
 
 # Set SSL version preference
@@ -1260,6 +1264,13 @@ Install-Json2Hcl
 $Json2HclInstallEnd = Get-Date
 $Json2HclInstallDuration = New-TimeSpan -Start $Json2HclInstallStart -End $Json2HclInstallEnd
 Write-Host "Json2HCL installation took $($Json2HclInstallDuration.Hours.ToString("00")):$($Json2HclInstallDuration.Minutes.ToString("00")):$($Json2HclInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
+
+# Install Nuget
+$NugetInstallStart = Get-Date
+Install-Nuget
+$NugetInstallEnd = Get-Date
+$NugetInstallDuration = New-TimeSpan -Start $NugetInstallStart -End $NugetInstallEnd
+Write-Host "Nuget installation took $($NugetInstallDuration.Hours.ToString("00")):$($NugetInstallDuration.Minutes.ToString("00")):$($NugetInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
 # Install Powershell Modules
 $PoShModuleInstallStart = Get-Date
@@ -1320,6 +1331,7 @@ $AgentInstallDuration = New-TimeSpan -Start $AgentInstallStart -End $AgentInstal
 Write-Host "Agent installation took $($AgentInstallDuration.Hours.ToString("00")):$($AgentInstallDuration.Minutes.ToString("00")):$($AgentInstallDuration.Seconds.ToString("00")) (HH:mm:ss)"
 
 # Get available Volume size, RAM
+Write-Output "-----------------------------------------------------------------------------------"
 Get-SystemData
 
 # Calculate duration

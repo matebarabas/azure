@@ -472,7 +472,7 @@ function New-Container
         $NotificationTracker = @{ }
         while ($ConfiguredContainers.Count -ne $ContainerName.Count)
         {
-            Start-Sleep -Seconds 60
+            Start-Sleep -Seconds 10
             foreach ($Name in $ContainerName)
             {
                 if ($ConfiguredContainers -notcontains $Name)
