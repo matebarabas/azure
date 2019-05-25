@@ -519,7 +519,7 @@ function New-Container
             Write-Output "It took $($TimeSpan.Minutes) minutes and $($TimeSpan.Seconds) seconds to initialize the requested containers."
             if ($ContainerDeletetionWasRequired)
             {
-                Write-Warning "One or more containers have been deleted. Don't forget to clean your Agent pool in VSTS (remove any agents that were created in a previous iteration and are now offline)!"
+                Write-Warning "One or more containers have been deleted. "
             }
         }
     }
